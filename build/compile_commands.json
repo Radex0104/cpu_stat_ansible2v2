@@ -1,0 +1,38 @@
+[
+{
+  "directory": "H:/qt3/cpu_stat_ansible2v2/build",
+  "command": "C:\\Qt\\Qt5.12.12\\Tools\\mingw730_64\\bin\\g++.exe -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB @CMakeFiles/CpuStatCheck.dir/includes_CXX.rsp -g -std=gnu++1z -o CMakeFiles\\CpuStatCheck.dir\\CpuStatCheck_autogen\\mocs_compilation.cpp.obj -c H:\\qt3\\cpu_stat_ansible2v2\\build\\CpuStatCheck_autogen\\mocs_compilation.cpp",
+  "file": "H:/qt3/cpu_stat_ansible2v2/build/CpuStatCheck_autogen/mocs_compilation.cpp",
+  "output": "CMakeFiles/CpuStatCheck.dir/CpuStatCheck_autogen/mocs_compilation.cpp.obj"
+},
+{
+  "directory": "H:/qt3/cpu_stat_ansible2v2/build",
+  "command": "C:\\Qt\\Qt5.12.12\\Tools\\mingw730_64\\bin\\g++.exe -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB @CMakeFiles/CpuStatCheck.dir/includes_CXX.rsp -g -std=gnu++1z -o CMakeFiles\\CpuStatCheck.dir\\src\\ansiblerunner.cpp.obj -c H:\\qt3\\cpu_stat_ansible2v2\\src\\ansiblerunner.cpp",
+  "file": "H:/qt3/cpu_stat_ansible2v2/src/ansiblerunner.cpp",
+  "output": "CMakeFiles/CpuStatCheck.dir/src/ansiblerunner.cpp.obj"
+},
+{
+  "directory": "H:/qt3/cpu_stat_ansible2v2/build",
+  "command": "C:\\Qt\\Qt5.12.12\\Tools\\mingw730_64\\bin\\g++.exe -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB @CMakeFiles/CpuStatCheck.dir/includes_CXX.rsp -g -std=gnu++1z -o CMakeFiles\\CpuStatCheck.dir\\src\\configmanager.cpp.obj -c H:\\qt3\\cpu_stat_ansible2v2\\src\\configmanager.cpp",
+  "file": "H:/qt3/cpu_stat_ansible2v2/src/configmanager.cpp",
+  "output": "CMakeFiles/CpuStatCheck.dir/src/configmanager.cpp.obj"
+},
+{
+  "directory": "H:/qt3/cpu_stat_ansible2v2/build",
+  "command": "C:\\Qt\\Qt5.12.12\\Tools\\mingw730_64\\bin\\g++.exe -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB @CMakeFiles/CpuStatCheck.dir/includes_CXX.rsp -g -std=gnu++1z -o CMakeFiles\\CpuStatCheck.dir\\src\\main.cpp.obj -c H:\\qt3\\cpu_stat_ansible2v2\\src\\main.cpp",
+  "file": "H:/qt3/cpu_stat_ansible2v2/src/main.cpp",
+  "output": "CMakeFiles/CpuStatCheck.dir/src/main.cpp.obj"
+},
+{
+  "directory": "H:/qt3/cpu_stat_ansible2v2/build",
+  "command": "C:\\Qt\\Qt5.12.12\\Tools\\mingw730_64\\bin\\g++.exe -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB @CMakeFiles/CpuStatCheck.dir/includes_CXX.rsp -g -std=gnu++1z -o CMakeFiles\\CpuStatCheck.dir\\src\\mainwindow.cpp.obj -c H:\\qt3\\cpu_stat_ansible2v2\\src\\mainwindow.cpp",
+  "file": "H:/qt3/cpu_stat_ansible2v2/src/mainwindow.cpp",
+  "output": "CMakeFiles/CpuStatCheck.dir/src/mainwindow.cpp.obj"
+},
+{
+  "directory": "H:/qt3/cpu_stat_ansible2v2/build",
+  "command": "C:\\Qt\\Qt5.12.12\\Tools\\mingw730_64\\bin\\g++.exe -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB @CMakeFiles/CpuStatCheck.dir/includes_CXX.rsp -g -std=gnu++1z -o CMakeFiles\\CpuStatCheck.dir\\src\\windowgraphics.cpp.obj -c H:\\qt3\\cpu_stat_ansible2v2\\src\\windowgraphics.cpp",
+  "file": "H:/qt3/cpu_stat_ansible2v2/src/windowgraphics.cpp",
+  "output": "CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj"
+}
+]

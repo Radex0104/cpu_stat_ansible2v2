@@ -1,0 +1,4 @@
+H:/qt3/cpu_stat_ansible2v2/build/CMakeFiles/CpuStatCheck.dir
+H:/qt3/cpu_stat_ansible2v2/build/CMakeFiles/edit_cache.dir
+H:/qt3/cpu_stat_ansible2v2/build/CMakeFiles/rebuild_cache.dir
+H:/qt3/cpu_stat_ansible2v2/build/CMakeFiles/CpuStatCheck_autogen.dir

@@ -1,0 +1,16 @@
+{
+    "cmake.configureOnOpen": true,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.generator": "MinGW Makefiles",
+    "cmake.mingwSearchDirs": [
+        "C:/Qt/Qt5.12.12/Tools/mingw730_64/bin"
+    ],
+    "cmake.configureSettings": {
+        "CMAKE_C_COMPILER": "C:/Qt/Qt5.12.12/Tools/mingw730_64/bin/gcc.exe",
+        "CMAKE_CXX_COMPILER": "C:/Qt/Qt5.12.12/Tools/mingw730_64/bin/g++.exe",
+        "CMAKE_MAKE_PROGRAM": "C:/Qt/Qt5.12.12/Tools/mingw730_64/bin/mingw32-make.exe",
+        "CMAKE_PREFIX_PATH": "C:/Qt/Qt5.12.12/5.12.12/mingw73_64"
+    },
+    "cmake.parallelJobs": 4,
+    "C_Cpp.default.compilerPath": "C:/Qt/Qt5.12.12/Tools/mingw730_64/bin/g++.exe"
+}

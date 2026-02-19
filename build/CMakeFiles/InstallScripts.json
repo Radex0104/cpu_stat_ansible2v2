@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"H:/qt3/cpu_stat_ansible2v2/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
