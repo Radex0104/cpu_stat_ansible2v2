@@ -19,7 +19,6 @@ file(GLOB SOURCES
 
 file(GLOB HEADERS
     "headers/*.h"
-    "headers/*.hpp"
 )
 
 file(GLOB UI_FILES

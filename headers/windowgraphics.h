@@ -10,6 +10,7 @@
 #include <QGroupBox>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QStatusBar>
 
 class WindowGraphics : public QWidget
 {
@@ -30,6 +31,7 @@ public:
     // Методы для обновления UI
     void updateFilePathLabel(const QString& text, bool success = true);
     void appendOutput(const QString& text);
+    void appendStatusBar(const QString& text);
     void clearOutput();
     void addHostToList(const QString& hostInfo);
     void removeHostFromList(int row);
@@ -46,6 +48,7 @@ private:
     QLineEdit *newHostEdit;
     QLineEdit *sshUserEdit;
     QLineEdit *sshPasswordEdit;
+    QStatusBar *statusBar;
 };
 
 #endif // WINDOWGRAPHICS_H

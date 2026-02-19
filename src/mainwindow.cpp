@@ -10,6 +10,7 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QUrl>
+#include <QTimer>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -20,10 +21,9 @@ MainWindow::MainWindow(QWidget *parent)
     // Создаем графическую оболочку
     graphics = new WindowGraphics(this);
     setCentralWidget(graphics);
-
+    checker = new WSLChecker(this);
     configManager = new ConfigManager(this);
     ansibleRunner = new AnsibleRunner(this);
-
     loadSavedConfiguration();
     setupConnections();
 
@@ -40,7 +40,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ansibleRunner, &AnsibleRunner::outputReceived, this, &MainWindow::onAnsibleOutput);
     connect(ansibleRunner, &AnsibleRunner::finished, this, &MainWindow::onAnsibleFinished);
     connect(ansibleRunner, &AnsibleRunner::errorOccurred, this, &MainWindow::onAnsibleError);
-
+    connect(checker, SIGNAL(wslSetupFinished(bool)),
+            this, SLOT(onWslSetupFinished(bool)));
+    
+    // connect(checker, SIGNAL(wslSetupFinished(bool)), this, SLOT(onWslSetupFinished(bool)));
 }
 
 MainWindow::~MainWindow()
@@ -48,12 +51,20 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::showEvent(QShowEvent *event)
+{
+    QMainWindow::showEvent(event);
+    
+    static bool checked = false;
+    if (!checked) {
+        checked = true;
+        qDebug() << "Запуск синхронной проверки WSL через 100ms";
+        QTimer::singleShot(100, this, &MainWindow::checkWSLAndShowStatus);
+    }
+}
+
 void MainWindow::setupConnections()
 {
-    // Ищем кнопки по property
-    QPushButton* addButton = findChild<QPushButton*>("addHostButton");
-    QPushButton* removeButton = findChild<QPushButton*>("removeHostButton");
-
     // Или можно добавить методы в WindowGraphics для доступа к кнопкам
     connect(graphics->getAddHostButton(), &QPushButton::clicked, this, &MainWindow::onAddHostClicked);
     connect(graphics->getRemoveHostButton(), &QPushButton::clicked, this, &MainWindow::removeHost);
@@ -70,11 +81,75 @@ void MainWindow::loadSavedConfiguration()
     }
 }
 
+void MainWindow::checkWSLAndShowStatus()
+{
+    qDebug() << "Выполнение синхронной проверки WSL...";
+    
+    // Выполняем синхронную проверку
+    WSLChecker::WSLInfo info = checker->checkWSL();
+    
+    // Дополнительная диагностика
+    qDebug() << "Результат проверки:";
+    qDebug() << "  isInstalled:" << info.isInstalled;
+    qDebug() << "  hasDistributions:" << info.hasDistributions;
+    qDebug() << "  errorMessage:" << info.errorMessage;
+    qDebug() << "  distributions:" << info.distributions;
+    
+    // Показываем результат в статус-баре
+    if (info.isInstalled) {
+        if (info.hasDistributions) {
+            QString status = "WSL готов: " + info.distributions.join(", ");
+            graphics->appendStatusBar(status);
+        } else {
+            graphics->appendStatusBar("WSL установлен, но нет дистрибутивов");
+            QTimer::singleShot(500, checker, &WSLChecker::showWslSetupDialog);
+        }
+    } else {
+        graphics->appendStatusBar("WSL не установлен: " + info.errorMessage);
+        QTimer::singleShot(500, checker, &WSLChecker::showWslSetupDialog);
+    }
+}
+
+void MainWindow::onWslSetupFinished(bool success)
+{
+    qDebug() << "Установка WSL завершена, успех:" << success;
+    if (success) {
+        // Предлагаем перезагрузить или проверить снова
+        QMessageBox::information(this, "Установка завершена", 
+            "Установка WSL завершена. После перезагрузки компьютера программа автоматически проверит наличие WSL.");
+    }
+}
+
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
     if (event->mimeData()->hasUrls()) {
         event->acceptProposedAction();
     }
+}
+
+void MainWindow::onWslCheckCompleted(const WSLChecker::WSLInfo &info)
+{
+    qDebug() << info.isInstalled;
+    qDebug() << "=== РЕЗУЛЬТАТ ПРОВЕРКИ WSL ===";
+    qDebug() << "WSL is installed:" << (info.isInstalled ? "yes" : "no");
+    
+    if (info.isInstalled) {
+        if (info.hasDistributions) {
+            QString status = "WSL ready: " + info.distributions.join(", ");
+            graphics->appendStatusBar(status);
+            qDebug() << "distr:" << info.distributions;
+        } else {
+            graphics->appendStatusBar("WSL is installed, but no distr");
+        }
+    } else {
+        graphics->appendStatusBar("WSL isn't installed");
+    }
+}
+
+void MainWindow::onWslCheckError(const QString &error)
+{
+    qDebug() << "Ошибка WSL:" << error;
+    graphics->appendStatusBar("Ошибка проверки WSL");
 }
 
 void MainWindow::dropEvent(QDropEvent *event)
