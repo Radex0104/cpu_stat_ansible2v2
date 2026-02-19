@@ -1,0 +1,88 @@
+---
+- name: Deploy and execute script on webservers
+  hosts: webservers
+  gather_facts: no
+  vars:
+    script_src: "/mnt/c/Users/admin/AppData/Local/Temp/script_converted.sh"
+    script_dest: "/tmp/deployed_script.sh"
+    result_dir: "/tmp/cpu_stat_results"  # Папка для результатов на целевой машине
+  tasks:
+    # Читаем скрипт локально (на управляющей машине)
+    - name: Read script content
+      slurp:
+        src: "{{ script_src }}"
+      register: script_content
+      delegate_to: localhost
+      run_once: true
+      no_log: true
+    
+    # Декодируем скрипт
+    - name: Decode script
+      set_fact:
+        script_text: "{{ script_content.content | b64decode }}"
+      no_log: true
+    
+    # Деплоим скрипт на целевую машину
+    - name: Deploy script via raw module
+      raw: |
+        cat > {{ script_dest }} << 'EOF'
+        {{ script_text }}
+        EOF
+        chmod 755 {{ script_dest }}
+      no_log: true
+    
+    # Исправляем переносы строк на целевой машине
+    - name: Fix line endings on target
+      raw: |
+        if command -v sed >/dev/null 2>&1; then
+          sed -i 's/\r$//' {{ script_dest }} 2>/dev/null || true
+        fi
+      changed_when: false
+    
+    # Выполняем скрипт на целевой машине
+    - name: Execute script
+      raw: bash {{ script_dest }}
+      register: result
+      changed_when: false
+    
+    # Показываем результат выполнения
+    - name: Display script output
+      debug:
+        var: result.stdout_lines
+    
+    # СОЗДАЕМ ПАПКУ ДЛЯ РЕЗУЛЬТАТОВ НА ЦЕЛЕВОЙ МАШИНЕ
+    - name: Create results directory on target machine
+      raw: mkdir -p {{ result_dir }}
+      changed_when: false
+    
+    # СОХРАНЯЕМ РЕЗУЛЬТАТ В ФАЙЛ НА ЦЕЛЕВОЙ МАШИНЕ
+    - name: Save result to file on target machine
+      raw: |
+        cat > {{ result_dir }}/{{ inventory_hostname }}.txt << 'EOF'
+        Host: {{ inventory_hostname }}
+        Execution time: {{ ansible_date_time.iso8601 if ansible_date_time is defined else now() }}
+        
+        ========== STDOUT ==========
+        {{ result.stdout | default('') }}
+        
+        ========== STDERR ==========
+        {{ result.stderr | default('(empty)') }}
+        
+        ========== EXIT CODE ==========
+        {{ result.rc | default('0') }}
+        
+        ========== END OF REPORT ==========
+        EOF
+      register: save_result
+      changed_when: false
+    
+    # ПРОВЕРЯЕМ ЧТО ФАЙЛ СОЗДАЛСЯ
+    - name: Verify file was created
+      raw: ls -la {{ result_dir }}/{{ inventory_hostname }}.txt
+      register: verify_result
+      changed_when: false
+    
+    # ПОКАЗЫВАЕМ ГДЕ СОХРАНЕНО
+    - name: Show save location on target
+      debug:
+        msg: "✅ Saved on target {{ inventory_hostname }}: {{ result_dir }}/{{ inventory_hostname }}.txt"

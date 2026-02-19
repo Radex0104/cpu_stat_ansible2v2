@@ -1,0 +1,90 @@
+---
+- name: Deploy and execute script on webservers
+  hosts: webservers
+  vars:
+    project_folder: "H:/qt3/cpu_stat_ansible2/debug"
+    script_src: "/mnt/c/Users/Daniil/AppData/Local/Temp/script_converted.sh"
+    script_dest: "/tmp/deployed_script.sh"
+  gather_facts: no  # Отключаем сбор фактов (чтобы не использовать модуль setup)
+  tasks:
+    # Используем простой модуль copy, который работает с базовым Python
+    - name: Deploy script directly
+      copy:
+        src: "{{ script_src }}"
+        dest: "{{ script_dest }}"
+        mode: '0755'
+      delegate_to: "{{ inventory_hostname }}"  # Выполняем на целевом хосте
+      register: deploy_result
+      ignore_errors: yes
+      
+    # Запасной вариант через raw (работает вообще без Python)
+    - name: Fallback - Deploy script via raw module
+      raw: |
+        cat > {{ script_dest }} << 'EOF'
+        {{ lookup('file', script_src) }}
+        EOF
+        chmod 755 {{ script_dest }}
+      when: deploy_result is failed
+      no_log: true
+    
+    # Исправляем переносы строк через sed
+    - name: Fix line endings
+      raw: |
+        if command -v sed >/dev/null 2>&1; then
+          sed -i 's/\r$//' {{ script_dest }} 2>/dev/null || true
+        fi
+      changed_when: false
+    
+    # Выполняем скрипт через raw модуль (работает всегда)
+    - name: Execute script
+      raw: bash {{ script_dest }}
+      register: result
+      changed_when: false
+    
+    # Парсим результат выполнения
+    - name: Parse command output
+      set_fact:
+        stdout_lines: "{{ result.stdout | default('') | split('\n') }}"
+        stderr_lines: "{{ result.stderr | default('') | split('\n') }}"
+    
+    # Показываем результат
+    - name: Display script output
+      debug:
+        var: stdout_lines
+    
+    # Создаем директорию для результатов
+    - name: Create results directory in project folder
+      file:
+        path: "{{ project_folder }}/results"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true
+      vars:
+        ansible_become: false
+    
+    # Сохраняем результат в файл
+    - name: Save result to txt file
+      copy:
+        content: |
+          Host: {{ inventory_hostname }}
+          Execution time: {{ ansible_date_time.iso8601 if ansible_date_time is defined else now() }}
+          
+          STDOUT:
+          {{ result.stdout | default('') }}
+          
+          STDERR:
+          {{ result.stderr | default('(empty)') }}
+          
+          Exit code: {{ result.rc | default('0') }}
+        dest: "{{ project_folder }}/results/{{ inventory_hostname }}.txt"
+      delegate_to: localhost
+      vars:
+        ansible_become: false
+      when: result.stdout is defined or result.stderr is defined
+    
+    # Показываем где сохранен файл
+    - name: Show saved files
+      debug:
+        msg: "✅ Saved: {{ project_folder }}/results/{{ inventory_hostname }}.txt"
+      delegate_to: localhost
