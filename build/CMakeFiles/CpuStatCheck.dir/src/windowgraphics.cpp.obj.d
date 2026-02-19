@@ -320,6 +320,8 @@ CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qboxlayout.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qgridlayout.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QHBoxLayout \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QStatusBar \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qstatusbar.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/QDragEnterEvent \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qevent.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcoreevent.h \

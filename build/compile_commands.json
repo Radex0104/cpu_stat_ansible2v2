@@ -34,5 +34,11 @@
   "command": "C:\\Qt\\Qt5.12.12\\Tools\\mingw730_64\\bin\\g++.exe -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB @CMakeFiles/CpuStatCheck.dir/includes_CXX.rsp -g -std=gnu++1z -o CMakeFiles\\CpuStatCheck.dir\\src\\windowgraphics.cpp.obj -c H:\\qt3\\cpu_stat_ansible2v2\\src\\windowgraphics.cpp",
   "file": "H:/qt3/cpu_stat_ansible2v2/src/windowgraphics.cpp",
   "output": "CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj"
+},
+{
+  "directory": "H:/qt3/cpu_stat_ansible2v2/build",
+  "command": "C:\\Qt\\Qt5.12.12\\Tools\\mingw730_64\\bin\\g++.exe -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB @CMakeFiles/CpuStatCheck.dir/includes_CXX.rsp -g -std=gnu++1z -o CMakeFiles\\CpuStatCheck.dir\\src\\wslchecker.cpp.obj -c H:\\qt3\\cpu_stat_ansible2v2\\src\\wslchecker.cpp",
+  "file": "H:/qt3/cpu_stat_ansible2v2/src/wslchecker.cpp",
+  "output": "CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj"
 }
 ]

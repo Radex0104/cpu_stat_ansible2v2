@@ -285,6 +285,30 @@ src/windowgraphics.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\CpuStatCheck.dir\build.make CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.s
 .PHONY : src/windowgraphics.cpp.s
 
+src/wslchecker.obj: src/wslchecker.cpp.obj
+.PHONY : src/wslchecker.obj
+
+# target to build an object file
+src/wslchecker.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\CpuStatCheck.dir\build.make CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj
+.PHONY : src/wslchecker.cpp.obj
+
+src/wslchecker.i: src/wslchecker.cpp.i
+.PHONY : src/wslchecker.i
+
+# target to preprocess a source file
+src/wslchecker.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\CpuStatCheck.dir\build.make CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.i
+.PHONY : src/wslchecker.cpp.i
+
+src/wslchecker.s: src/wslchecker.cpp.s
+.PHONY : src/wslchecker.s
+
+# target to generate assembly for a file
+src/wslchecker.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\CpuStatCheck.dir\build.make CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.s
+.PHONY : src/wslchecker.cpp.s
+
 # Help Target
 help:
 	@echo The following are some of the valid targets for this Makefile:
@@ -313,6 +337,9 @@ help:
 	@echo ... src/windowgraphics.obj
 	@echo ... src/windowgraphics.i
 	@echo ... src/windowgraphics.s
+	@echo ... src/wslchecker.obj
+	@echo ... src/wslchecker.i
+	@echo ... src/wslchecker.s
 .PHONY : help
 
 

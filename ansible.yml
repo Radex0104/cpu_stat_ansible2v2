@@ -3,7 +3,7 @@
   hosts: webservers
   gather_facts: no
   vars:
-    script_src: "/mnt/c/Users/admin/AppData/Local/Temp/script_converted.sh"
+    script_src: "/mnt/c/Users/Daniil/AppData/Local/Temp/script_converted.sh"
     script_dest: "/tmp/deployed_script.sh"
     result_dir: "/tmp/cpu_stat_results"  # Папка для результатов на целевой машине
   tasks:

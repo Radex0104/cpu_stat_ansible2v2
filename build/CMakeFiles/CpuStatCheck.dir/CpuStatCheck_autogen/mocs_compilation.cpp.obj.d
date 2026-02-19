@@ -340,6 +340,13 @@ CMakeFiles/CpuStatCheck.dir/CpuStatCheck_autogen/mocs_compilation.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qboxlayout.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qgridlayout.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QHBoxLayout \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QStatusBar \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qstatusbar.h \
+ H:/qt3/cpu_stat_ansible2v2/headers/wslchecker.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QDebug \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qdebug.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qtextstream.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcontiguouscache.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/QDragEnterEvent \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qevent.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcoreevent.h \
@@ -349,4 +356,6 @@ CMakeFiles/CpuStatCheck.dir/CpuStatCheck_autogen/mocs_compilation.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtouchdevice.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/QDropEvent \
  H:\qt3\cpu_stat_ansible2v2\build\CpuStatCheck_autogen\K6S233IZAZ/moc_windowgraphics.cpp \
- H:/qt3/cpu_stat_ansible2v2/headers/windowgraphics.h
+ H:/qt3/cpu_stat_ansible2v2/headers/windowgraphics.h \
+ H:\qt3\cpu_stat_ansible2v2\build\CpuStatCheck_autogen\K6S233IZAZ/moc_wslchecker.cpp \
+ H:/qt3/cpu_stat_ansible2v2/headers/wslchecker.h

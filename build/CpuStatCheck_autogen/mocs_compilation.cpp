@@ -3,3 +3,4 @@
 #include "K6S233IZAZ/moc_configmanager.cpp"
 #include "K6S233IZAZ/moc_mainwindow.cpp"
 #include "K6S233IZAZ/moc_windowgraphics.cpp"
+#include "K6S233IZAZ/moc_wslchecker.cpp"

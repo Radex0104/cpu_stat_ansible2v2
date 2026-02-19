@@ -335,6 +335,13 @@ CMakeFiles/CpuStatCheck.dir/src/mainwindow.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qboxlayout.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qgridlayout.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QHBoxLayout \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QStatusBar \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qstatusbar.h \
+ H:/qt3/cpu_stat_ansible2v2/headers/wslchecker.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QDebug \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qdebug.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qtextstream.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcontiguouscache.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/QDragEnterEvent \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qevent.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcoreevent.h \
@@ -359,7 +366,6 @@ CMakeFiles/CpuStatCheck.dir/src/mainwindow.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qaction.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qactiongroup.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QStatusBar \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qstatusbar.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QWidget \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QMimeData \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qmimedata.h \
@@ -375,9 +381,8 @@ CMakeFiles/CpuStatCheck.dir/src/mainwindow.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qdialog.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QCoreApplication \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcoreapplication.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QDebug \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qdebug.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qtextstream.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcontiguouscache.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QUrl \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qurl.h
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qurl.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QTimer \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qtimer.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qbasictimer.h

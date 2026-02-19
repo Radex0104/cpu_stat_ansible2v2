@@ -7,9 +7,12 @@ H:/qt3/cpu_stat_ansible2v2/headers/configmanager.h
 H:/qt3/cpu_stat_ansible2v2/src/ansiblerunner.cpp
 H:/qt3/cpu_stat_ansible2v2/headers/mainwindow.h
  mmc:Q_OBJECT
+H:/qt3/cpu_stat_ansible2v2/headers/wslchecker.h
+ mmc:Q_OBJECT
 H:/qt3/cpu_stat_ansible2v2/headers/windowgraphics.h
  mmc:Q_OBJECT
 H:/qt3/cpu_stat_ansible2v2/src/configmanager.cpp
+H:/qt3/cpu_stat_ansible2v2/src/wslchecker.cpp
 H:/qt3/cpu_stat_ansible2v2/src/main.cpp
 H:/qt3/cpu_stat_ansible2v2/src/mainwindow.cpp
 H:/qt3/cpu_stat_ansible2v2/src/windowgraphics.cpp

@@ -41,6 +41,7 @@ void WindowGraphics::setupUI()
     newHostEdit = new QLineEdit();
     sshUserEdit = new QLineEdit();
     sshPasswordEdit = new QLineEdit();
+    statusBar = new QStatusBar();
     sshUserEdit->setPlaceholderText("ubuntu1 (пользователь на сервере)");
     newHostEdit->setPlaceholderText("Введите адрес хоста (IP или домен)");
     sshPasswordEdit->setPlaceholderText("Введите пароль для хоста");
@@ -78,6 +79,9 @@ void WindowGraphics::setupUI()
     // ----- МЕТАДАННЫЕ ДЛЯ КНОПОК -----
     addHostButton->setProperty("buttonType", "add");
     removeHostButton->setProperty("buttonType", "remove");
+
+    mainLayout->addWidget(statusBar);
+
 }
 
 // ==================== МЕТОДЫ ОБНОВЛЕНИЯ ИНТЕРФЕЙСА ====================
@@ -95,6 +99,11 @@ void WindowGraphics::updateFilePathLabel(const QString& text, bool success)
 void WindowGraphics::appendOutput(const QString& text)
 {
     outputTextEdit->append(text);
+}
+
+void WindowGraphics::appendStatusBar(const QString& text)
+{
+    statusBar->showMessage(text);
 }
 
 // ----- ОЧИСТКА ОБЛАСТИ ВЫВОДА -----

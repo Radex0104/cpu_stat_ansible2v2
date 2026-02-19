@@ -161,6 +161,21 @@ CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.s"
 	C:\Qt\Qt5.12.12\Tools\mingw730_64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S H:\qt3\cpu_stat_ansible2v2\src\windowgraphics.cpp -o CMakeFiles\CpuStatCheck.dir\src\windowgraphics.cpp.s
 
+CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj: CMakeFiles/CpuStatCheck.dir/flags.make
+CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj: CMakeFiles/CpuStatCheck.dir/includes_CXX.rsp
+CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj: H:/qt3/cpu_stat_ansible2v2/src/wslchecker.cpp
+CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj: CMakeFiles/CpuStatCheck.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=H:\qt3\cpu_stat_ansible2v2\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj"
+	C:\Qt\Qt5.12.12\Tools\mingw730_64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj -MF CMakeFiles\CpuStatCheck.dir\src\wslchecker.cpp.obj.d -o CMakeFiles\CpuStatCheck.dir\src\wslchecker.cpp.obj -c H:\qt3\cpu_stat_ansible2v2\src\wslchecker.cpp
+
+CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.i"
+	C:\Qt\Qt5.12.12\Tools\mingw730_64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E H:\qt3\cpu_stat_ansible2v2\src\wslchecker.cpp > CMakeFiles\CpuStatCheck.dir\src\wslchecker.cpp.i
+
+CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.s"
+	C:\Qt\Qt5.12.12\Tools\mingw730_64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S H:\qt3\cpu_stat_ansible2v2\src\wslchecker.cpp -o CMakeFiles\CpuStatCheck.dir\src\wslchecker.cpp.s
+
 # Object files for target CpuStatCheck
 CpuStatCheck_OBJECTS = \
 "CMakeFiles/CpuStatCheck.dir/CpuStatCheck_autogen/mocs_compilation.cpp.obj" \
@@ -168,7 +183,8 @@ CpuStatCheck_OBJECTS = \
 "CMakeFiles/CpuStatCheck.dir/src/configmanager.cpp.obj" \
 "CMakeFiles/CpuStatCheck.dir/src/main.cpp.obj" \
 "CMakeFiles/CpuStatCheck.dir/src/mainwindow.cpp.obj" \
-"CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj"
+"CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj" \
+"CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj"
 
 # External object files for target CpuStatCheck
 CpuStatCheck_EXTERNAL_OBJECTS =
@@ -179,6 +195,7 @@ CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/src/configmanager.cpp.obj
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/src/main.cpp.obj
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/src/mainwindow.cpp.obj
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj
+CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/build.make
 CpuStatCheck.exe: C:/Qt/Qt5.12.12/5.12.12/mingw73_64/lib/libQt5Widgetsd.a
 CpuStatCheck.exe: C:/Qt/Qt5.12.12/5.12.12/mingw73_64/lib/libQt5Guid.a
@@ -186,7 +203,7 @@ CpuStatCheck.exe: C:/Qt/Qt5.12.12/5.12.12/mingw73_64/lib/libQt5Cored.a
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/linkLibs.rsp
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/objects1.rsp
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=H:\qt3\cpu_stat_ansible2v2\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking CXX executable CpuStatCheck.exe"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=H:\qt3\cpu_stat_ansible2v2\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX executable CpuStatCheck.exe"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles\CpuStatCheck.dir\link.txt --verbose=$(VERBOSE)
 	"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different H:/qt3/cpu_stat_ansible2v2/ansible.yml /ansible.yml
 	"C:\Program Files\CMake\bin\cmake.exe" -E make_directory /results

@@ -11,6 +11,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/CpuStatCheck.dir/src/mainwindow.cpp.obj.d"
   "CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj"
   "CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj.d"
+  "CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj"
+  "CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj.d"
   "CpuStatCheck.exe"
   "CpuStatCheck.exe.manifest"
   "CpuStatCheck.pdb"

@@ -123,6 +123,12 @@
 			"Mu",
 			"K6S233IZAZ/moc_windowgraphics.cpp",
 			null
+		],
+		[
+			"H:/qt3/cpu_stat_ansible2v2/headers/wslchecker.h",
+			"Mu",
+			"K6S233IZAZ/moc_wslchecker.cpp",
+			null
 		]
 	],
 	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
@@ -181,7 +187,8 @@
 		[ "H:/qt3/cpu_stat_ansible2v2/src/configmanager.cpp", "Mu", null ],
 		[ "H:/qt3/cpu_stat_ansible2v2/src/main.cpp", "Mu", null ],
 		[ "H:/qt3/cpu_stat_ansible2v2/src/mainwindow.cpp", "Mu", null ],
-		[ "H:/qt3/cpu_stat_ansible2v2/src/windowgraphics.cpp", "Mu", null ]
+		[ "H:/qt3/cpu_stat_ansible2v2/src/windowgraphics.cpp", "Mu", null ],
+		[ "H:/qt3/cpu_stat_ansible2v2/src/wslchecker.cpp", "Mu", null ]
 	],
 	"USE_BETTER_GRAPH" : false,
 	"VERBOSITY" : 0
