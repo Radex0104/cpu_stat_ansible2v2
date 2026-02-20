@@ -342,6 +342,13 @@ CMakeFiles/CpuStatCheck.dir/src/main.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qdebug.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qtextstream.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcontiguouscache.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QProgressBar \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qprogressbar.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QDialog \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qdialog.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QTimer \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qtimer.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qbasictimer.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/QDragEnterEvent \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qevent.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcoreevent.h \

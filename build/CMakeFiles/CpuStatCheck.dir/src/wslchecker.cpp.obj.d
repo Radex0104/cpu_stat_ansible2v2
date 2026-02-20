@@ -249,16 +249,14 @@ CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcontiguouscache.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qsharedpointer.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qsharedpointer_impl.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QTimer \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qtimer.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qbasictimer.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QMessageBox \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qmessagebox.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QTextEdit \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qtextedit.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qtwidgetsglobal.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtguiglobal.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtgui-config.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qtwidgets-config.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qdialog.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractscrollarea.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qframe.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qwidget.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qwindowdefs.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qwindowdefs_win.h \
@@ -288,11 +286,25 @@ CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qsizepolicy.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qcursor.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qkeysequence.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextdocument.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qurl.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextoption.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextcursor.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextformat.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qpen.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QProgressBar \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qprogressbar.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QPushButton \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qpushbutton.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractbutton.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qicon.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QDialog \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qdialog.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QTimer \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qtimer.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qbasictimer.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QMessageBox \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qmessagebox.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qdialog.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QVBoxLayout \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qboxlayout.h \
@@ -303,12 +315,10 @@ CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QHBoxLayout \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QLabel \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlabel.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qframe.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QListWidget \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlistwidget.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlistview.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractitemview.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractscrollarea.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qabstractitemmodel.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qitemselectionmodel.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractitemdelegate.h \
@@ -324,14 +334,28 @@ CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qrubberband.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QLineEdit \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlineedit.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextcursor.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextformat.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qpen.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextoption.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QDialogButtonBox \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qdialogbuttonbox.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/QDesktopServices \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qdesktopservices.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qstandardpaths.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QUrl \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qurl.h
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qurl.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QDir \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qdir.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qfileinfo.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qfile.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qfiledevice.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QFile \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qfile.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/QClipboard \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qclipboard.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/QGuiApplication \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qguiapplication.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcoreapplication.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcoreevent.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qeventloop.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qinputmethod.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QApplication \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qapplication.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qguiapplication.h

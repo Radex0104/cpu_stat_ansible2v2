@@ -75,12 +75,7 @@ void WindowGraphics::setupUI()
 
     outputLayout->addWidget(outputTextEdit);
     mainLayout->addWidget(outputGroup);
-
-    // ----- МЕТАДАННЫЕ ДЛЯ КНОПОК -----
-    addHostButton->setProperty("buttonType", "add");
-    removeHostButton->setProperty("buttonType", "remove");
-
-    mainLayout->addWidget(statusBar);
+    mainLayout->addWidget(statusBar);    
 
 }
 
