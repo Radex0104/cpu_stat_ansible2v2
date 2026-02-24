@@ -2,15 +2,16 @@
 #include <QDragEnterEvent>
 #include <QMimeData>
 
-// ==================== КОНСТРУКТОР ====================
 WindowGraphics::WindowGraphics(QWidget *parent)
     : QWidget(parent)
+    , progressManager(new ProgressManager(this))
 {
     setupUI();
     setAcceptDrops(true);
+
+    progressManager->setProgressBar(progressBar);
 }
 
-// ==================== ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА ====================
 void WindowGraphics::setupUI()
 {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -27,11 +28,6 @@ void WindowGraphics::setupUI()
     filePathLabel->setStyleSheet("QLabel { color: #666; font-size: 10pt; }");
     mainLayout->addWidget(filePathLabel);
 
-    // ----- СЕКЦИЯ ВВОДА SSH ПОЛЬЗОВАТЕЛЯ -----
-//    sshUserEdit = new QLineEdit();
-//    sshUserEdit->setPlaceholderText("ubuntu1 (пользователь на сервере)");
-//    mainLayout->addWidget(sshUserEdit);
-
     // ----- СЕКЦИЯ НАСТРОЙКИ ХОСТОВ -----
     QGroupBox *hostsGroup = new QGroupBox("Настройка хостов");
     QVBoxLayout *hostsLayout = new QVBoxLayout(hostsGroup);
@@ -42,9 +38,12 @@ void WindowGraphics::setupUI()
     sshUserEdit = new QLineEdit();
     sshPasswordEdit = new QLineEdit();
     statusBar = new QStatusBar();
+    
     sshUserEdit->setPlaceholderText("ubuntu1 (пользователь на сервере)");
     newHostEdit->setPlaceholderText("Введите адрес хоста (IP или домен)");
     sshPasswordEdit->setPlaceholderText("Введите пароль для хоста");
+    sshPasswordEdit->setEchoMode(QLineEdit::Password);
+    
     addHostButton = new QPushButton("Добавить");
     removeHostButton = new QPushButton("Удалить");
 
@@ -60,9 +59,48 @@ void WindowGraphics::setupUI()
     hostsLayout->addWidget(hostsListWidget);
     mainLayout->addWidget(hostsGroup);
 
+    // ----- СЕКЦИЯ ПРОГРЕСС-БАРА -----
+    QGroupBox *progressGroup = new QGroupBox("Прогресс выполнения");
+    QVBoxLayout *progressLayout = new QVBoxLayout(progressGroup);
+    
+    progressBar = new QProgressBar();
+    progressBar->setRange(0, 100);
+    progressBar->setValue(0);
+    progressBar->setVisible(false); // Скрыт по умолчанию
+    progressBar->setStyleSheet(
+        "QProgressBar {"
+        "    border: 1px solid #bbb;"
+        "    border-radius: 5px;"
+        "    text-align: center;"
+        "    height: 25px;"
+        "}"
+        "QProgressBar::chunk {"
+        "    background-color: #4CAF50;"
+        "    border-radius: 5px;"
+        "}"
+    );
+    
+    progressLayout->addWidget(progressBar);
+    mainLayout->addWidget(progressGroup);
+
     // ----- СЕКЦИЯ КНОПКИ ЗАПУСКА -----
     playButton = new QPushButton("Play");
-    playButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 10px; font-size: 14pt; }");
+    playButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #4CAF50;"
+        "    color: white;"
+        "    padding: 10px;"
+        "    font-size: 14pt;"
+        "    border: none;"
+        "    border-radius: 5px;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #45a049;"
+        "}"
+        "QPushButton:disabled {"
+        "    background-color: #cccccc;"
+        "}"
+    );
     mainLayout->addWidget(playButton);
 
     // ----- СЕКЦИЯ ВЫВОДА ANSIBLE -----
@@ -72,16 +110,14 @@ void WindowGraphics::setupUI()
     outputTextEdit = new QTextEdit();
     outputTextEdit->setReadOnly(true);
     outputTextEdit->setMinimumHeight(200);
+    outputTextEdit->setFontFamily("Courier New");
 
     outputLayout->addWidget(outputTextEdit);
     mainLayout->addWidget(outputGroup);
-    mainLayout->addWidget(statusBar);    
-
+    mainLayout->addWidget(statusBar);
 }
 
-// ==================== МЕТОДЫ ОБНОВЛЕНИЯ ИНТЕРФЕЙСА ====================
-
-// ----- ОБНОВЛЕНИЕ ЛЕЙБЛА ПУТИ К ФАЙЛУ -----
+// Остальные методы без изменений
 void WindowGraphics::updateFilePathLabel(const QString& text, bool success)
 {
     filePathLabel->setText(text);
@@ -90,7 +126,6 @@ void WindowGraphics::updateFilePathLabel(const QString& text, bool success)
         "QLabel { color: red; font-size: 10pt; }");
 }
 
-// ----- ДОБАВЛЕНИЕ ТЕКСТА В ОБЛАСТЬ ВЫВОДА -----
 void WindowGraphics::appendOutput(const QString& text)
 {
     outputTextEdit->append(text);
@@ -101,21 +136,30 @@ void WindowGraphics::appendStatusBar(const QString& text)
     statusBar->showMessage(text);
 }
 
-// ----- ОЧИСТКА ОБЛАСТИ ВЫВОДА -----
 void WindowGraphics::clearOutput()
 {
     outputTextEdit->clear();
 }
 
-// ----- ДОБАВЛЕНИЕ ХОСТА В СПИСОК -----
 void WindowGraphics::addHostToList(const QString& hostInfo)
 {
     hostsListWidget->addItem(hostInfo);
 }
 
-// ----- УДАЛЕНИЕ ХОСТА ИЗ СПИСКА -----
 void WindowGraphics::removeHostFromList(int row)
 {
     delete hostsListWidget->takeItem(row);
 }
 
+// void WindowGraphics::dragEnterEvent(QDragEnterEvent *event)
+// {
+//     if (event->mimeData()->hasUrls()) {
+//         event->acceptProposedAction();
+//     }
+// }
+
+// void WindowGraphics::dropEvent(QDropEvent *event)
+// {
+//     // Реализация dropEvent (можно оставить пустой или перенести из MainWindow)
+//     event->acceptProposedAction();
+// }

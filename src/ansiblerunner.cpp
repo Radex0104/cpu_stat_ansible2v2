@@ -4,10 +4,13 @@
 #include <QTextStream>
 #include <QDir>
 #include <QDebug>
+#include <QRegularExpression>
 
 AnsibleRunner::AnsibleRunner(QObject *parent)
     : QObject(parent)
     , ansibleProcess(nullptr)
+    , m_progressManager(nullptr)
+    , m_currentTaskIndex(0)
 {
     ansibleProcess = new QProcess(this);
 
@@ -18,11 +21,26 @@ AnsibleRunner::AnsibleRunner(QObject *parent)
     connect(ansibleProcess, &QProcess::readyReadStandardError, this, &AnsibleRunner::readProcessOutput);
 
     inventoryPath = QCoreApplication::applicationDirPath() + "/inventory.ini";
+    
+    // Предопределенные задачи Ansible
+    m_taskNames = QStringList() 
+            << "Сбор информации о хостах"
+            << "Подготовка окружения"
+            << "Копирование скрипта на сервер"
+            << "Установка прав на выполнение"
+            << "Выполнение скрипта"
+            << "Сбор результатов"
+            << "Завершение";
 }
 
 AnsibleRunner::~AnsibleRunner()
 {
     stop();
+}
+
+void AnsibleRunner::setProgressManager(ProgressManager* manager)
+{
+    m_progressManager = manager;
 }
 
 void AnsibleRunner::stop()
@@ -59,39 +77,30 @@ void AnsibleRunner::createInventoryFile()
         for (int i = 0; i < hostsConfig.size(); ++i) {
             const HostConfig &host = hostsConfig[i];
 
-            // Базовые параметры
             stream << host.address;
             stream << " ansible_user=" << host.sshUser;
 
-            // Добавляем пароль, если он есть
             if (!host.sshPass.isEmpty()) {
-                // Для разных версий Ansible
-                stream << " ansible_ssh_pass=" << host.sshPass;    // старый формат
-                stream << " ansible_password=" << host.sshPass;    // новый формат
+                stream << " ansible_ssh_pass=" << host.sshPass;
+                stream << " ansible_password=" << host.sshPass;
             }
 
-            // Явно указываем метод подключения
             stream << " ansible_connection=ssh";
             stream << " ansible_port=22";
             stream << " ansible_ssh_extra_args='-o PubkeyAuthentication=no -o PasswordAuthentication=yes'";
-
             stream << "\n";
         }
 
         stream << "\n[webservers:vars]\n";
         stream << "ansible_ssh_common_args='-o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o PasswordAuthentication=yes'\n";
 
-        // Добавляем глобальные переменные для паролей
         if (!hostsConfig.isEmpty() && !hostsConfig[0].sshPass.isEmpty()) {
             stream << "ansible_become_pass=" << hostsConfig[0].sshPass << "\n";
             stream << "ansible_sudo_pass=" << hostsConfig[0].sshPass << "\n";
         }
 
         file.close();
-
-        // Для отладки показываем созданный inventory
         emit outputReceived("📄 Inventory файл создан");
-        QFile debugFile(inventoryPath);
     } else {
         emit errorOccurred("Не удалось создать inventory файл");
     }
@@ -141,10 +150,19 @@ void AnsibleRunner::executePlaybook()
     emit outputReceived("🚀 Запуск Ansible playbook...");
     emit outputReceived("📋 Используется playbook: " + playbookPath);
 
+    // Сброс индекса задачи
+    m_currentTaskIndex = 0;
+    
+    // Запуск менеджера прогресса
+    if (m_progressManager) {
+        m_progressManager->startProgress(m_taskNames.size());
+        m_progressManager->setStatusText("Подготовка к запуску...");
+    }
+
     QStringList arguments;
     arguments << "-i" << convertToWslPath(inventoryPath);
     arguments << convertToWslPath(playbookPath);
-    //arguments << "-v";
+    // arguments << "-v"; // Для более детального вывода
 
     emit outputReceived("\n⚡ Выполнение playbook...");
     emit outputReceived("Команда: ansible-playbook " + arguments.join(" "));
@@ -158,7 +176,7 @@ bool AnsibleRunner::convertScriptToUnixFormat(const QString& filePath, QString& 
 {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
-        emit errorOccurred("Не удалось открыть файл для конвертации"); // Изменено здесь
+        emit errorOccurred("Не удалось открыть файл для конвертации");
         return false;
     }
 
@@ -183,7 +201,7 @@ bool AnsibleRunner::convertScriptToUnixFormat(const QString& filePath, QString& 
     QString tempFilePath = QDir::temp().absoluteFilePath("script_converted.sh");
     QFile tempFile(tempFilePath);
     if (!tempFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        emit errorOccurred("Не удалось создать временный файл"); // Изменено здесь
+        emit errorOccurred("Не удалось создать временный файл");
         return false;
     }
 
@@ -202,8 +220,6 @@ bool AnsibleRunner::convertScriptToUnixFormat(const QString& filePath, QString& 
     convertedPath = tempFilePath;
     emit outputReceived("🔄 Скрипт сконвертирован в Unix-формат и подготовлен к выполнению");
 
-    QStringList previewLines = content.split('\n').mid(0, 5);
-
     return true;
 }
 
@@ -221,9 +237,81 @@ QString AnsibleRunner::convertToWslPath(const QString& windowsPath) const
     return wslPath;
 }
 
+void AnsibleRunner::parseProgressFromOutput(const QString& output)
+{
+    if (!m_progressManager) return;
+
+    // Анализируем вывод Ansible для определения текущей задачи
+    
+    // TASK [Gathering Facts]
+    if (output.contains("TASK [Gathering Facts]")) {
+        m_currentTaskIndex = 0;
+        emit taskStarted("Сбор информации о хостах");
+        m_progressManager->setStatusText("Сбор информации о хостах...");
+    }
+    // TASK [copy script]
+    else if (output.contains("TASK [copy script]") || output.contains("TASK [Копирование]")) {
+        m_currentTaskIndex = 2;
+        emit taskStarted("Копирование скрипта");
+        m_progressManager->setStatusText("Копирование скрипта на сервер...");
+    }
+    // TASK [make executable]
+    else if (output.contains("TASK [make executable]") || output.contains("chmod")) {
+        m_currentTaskIndex = 3;
+        emit taskStarted("Установка прав");
+        m_progressManager->setStatusText("Установка прав на выполнение...");
+    }
+    // TASK [execute script]
+    else if (output.contains("TASK [execute script]") || output.contains("TASK [Выполнение]")) {
+        m_currentTaskIndex = 4;
+        emit taskStarted("Выполнение скрипта");
+        m_progressManager->setStatusText("Выполнение скрипта на сервере...");
+    }
+    // PLAY RECAP
+    else if (output.contains("PLAY RECAP")) {
+        m_currentTaskIndex = 6;
+        emit taskStarted("Завершение");
+        m_progressManager->setStatusText("Завершение выполнения...");
+    }
+    
+    // Обновляем прогресс на основе индекса задачи
+    if (m_currentTaskIndex < m_taskNames.size()) {
+        m_progressManager->updateProgress(m_currentTaskIndex + 1, m_taskNames[m_currentTaskIndex]);
+    }
+    
+    // Парсим прогресс по хостам
+    QRegularExpression hostProgressRegex("(\\w+)\\s*:\\s*ok=(\\d+)\\s*changed=(\\d+)\\s*unreachable=(\\d+)\\s*failed=(\\d+)");
+    QRegularExpressionMatch match = hostProgressRegex.match(output);
+    if (match.hasMatch()) {
+        QString host = match.captured(1);
+        int ok = match.captured(2).toInt();
+        int changed = match.captured(3).toInt();
+        int unreachable = match.captured(4).toInt();
+        int failed = match.captured(5).toInt();
+        
+        QString status = QString("Хост %1: OK=%2, Изменено=%3")
+            .arg(host).arg(ok).arg(changed);
+        
+        if (failed > 0) {
+            status += QString(", Ошибок=%1").arg(failed);
+        }
+        
+        m_progressManager->setStatusText(status);
+    }
+}
+
 void AnsibleRunner::onProcessFinished(int exitCode, QProcess::ExitStatus status)
 {
     bool success = (exitCode == 0 && status == QProcess::NormalExit);
+    
+    if (m_progressManager) {
+        m_progressManager->stopProgress(success);
+
+        if (!success) {
+            m_progressManager->setErrorMode(true);
+        }
+    }
+    
     if (success) {
         emit outputReceived("\n✅ Playbook успешно выполнен на всех хостах!");
         emit outputReceived("\n✨ Развертывание завершено!");
@@ -256,7 +344,12 @@ void AnsibleRunner::onProcessErrorOccurred(QProcess::ProcessError error)
             errorMessage = "Неизвестная ошибка.";
     }
 
-    emit errorOccurred(errorMessage); // Изменено здесь
+    if (m_progressManager) {
+        m_progressManager->stopProgress(false);
+        m_progressManager->setErrorMode(true); 
+    }
+    
+    emit errorOccurred(errorMessage);
 }
 
 void AnsibleRunner::readProcessOutput()
@@ -266,8 +359,10 @@ void AnsibleRunner::readProcessOutput()
 
     if (!output.isEmpty()) {
         emit outputReceived(output);
+        parseProgressFromOutput(output);
     }
     if (!error.isEmpty()) {
         emit outputReceived("<span style='color:red'>" + error + "</span>");
+        parseProgressFromOutput(error);
     }
 }

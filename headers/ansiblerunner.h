@@ -3,13 +3,13 @@
 
 #include <QObject>
 #include <QProcess>
-#include <QString>
-#include <QList>
-#include "configmanager.h"
+#include "progressmanager.h"
+#include "common.h"
 
 class AnsibleRunner : public QObject
 {
     Q_OBJECT
+
 public:
     explicit AnsibleRunner(QObject *parent = nullptr);
     ~AnsibleRunner();
@@ -19,14 +19,11 @@ public:
     void setHosts(const QList<HostConfig>& hosts);
     void executePlaybook();
     bool convertScriptToUnixFormat(const QString& filePath, QString& convertedPath);
-    QString convertToWslPath(const QString& windowsPath) const;
     bool updateScriptPathInPlaybook(const QString& playbookPath, const QString& scriptPath);
     void stop();
-
-signals:
-    void outputReceived(const QString& text);
-    void finished(bool success, int exitCode);
-    void errorOccurred(const QString& message);
+    
+    // Новый метод для установки менеджера прогресса
+    void setProgressManager(ProgressManager* manager);
 
 private slots:
     void onProcessFinished(int exitCode, QProcess::ExitStatus status);
@@ -35,12 +32,31 @@ private slots:
 
 private:
     void createInventoryFile();
+    QString convertToWslPath(const QString& windowsPath) const;
+    void parseProgressFromOutput(const QString& output);
 
-    QProcess *ansibleProcess;
+    QProcess* ansibleProcess;
     QString playbookPath;
     QString scriptPath;
     QString inventoryPath;
     QList<HostConfig> hostsConfig;
+    
+    // Новый член класса для управления прогрессом
+    ProgressManager* m_progressManager;
+    
+    // Для отслеживания этапов выполнения
+    int m_currentTaskIndex;
+    QStringList m_taskNames;
+
+signals:
+    void outputReceived(const QString& text);
+    void errorOccurred(const QString& error);
+    void finished(bool success, int exitCode);
+    
+    // Новые сигналы для прогресса
+    void progressUpdated(int percent, const QString& taskName);
+    void taskStarted(const QString& taskName);
+    void taskCompleted(const QString& taskName);
 };
 
 #endif // ANSIBLERUNNER_H
