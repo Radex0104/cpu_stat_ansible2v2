@@ -5,12 +5,7 @@
 #include <QList>
 #include <QString>
 #include <QSettings>
-
-struct HostConfig {
-    QString address;
-    QString sshUser;
-    QString sshPass;  // Пароль для SSH подключения
-};
+#include "common.h"
 
 class ConfigManager : public QObject
 {

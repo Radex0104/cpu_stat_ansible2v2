@@ -263,16 +263,21 @@ CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qsizepolicy.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qcursor.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qkeysequence.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QVBoxLayout \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qboxlayout.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlayout.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlayoutitem.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qboxlayout.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qgridlayout.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QHBoxLayout \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QLabel \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlabel.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qframe.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qwidget.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QListWidget \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlistwidget.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlistview.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractitemview.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractscrollarea.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qabstractitemmodel.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QLineEdit \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlineedit.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextcursor.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextformat.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qvariant.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qmap.h \
  C:/Qt/Qt5.12.12/Tools/mingw730_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++/functional \
@@ -283,6 +288,18 @@ CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj: \
  C:/Qt/Qt5.12.12/Tools/mingw730_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++/bits/hashtable_policy.h \
  C:/Qt/Qt5.12.12/Tools/mingw730_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++/bits/unordered_map.h \
  C:/Qt/Qt5.12.12/Tools/mingw730_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++/variant \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qpen.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextoption.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QPushButton \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qpushbutton.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractbutton.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qicon.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QListWidget \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlistwidget.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlistview.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractitemview.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractscrollarea.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qabstractitemmodel.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qitemselectionmodel.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qset.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractitemdelegate.h \
@@ -291,7 +308,6 @@ CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractspinbox.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qvalidator.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qregularexpression.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qicon.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qslider.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractslider.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qstyle.h \
@@ -302,26 +318,20 @@ CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qtextedit.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextdocument.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qurl.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextoption.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextcursor.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtextformat.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qpen.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QPushButton \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qpushbutton.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qabstractbutton.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QLineEdit \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlineedit.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QGroupBox \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qgroupbox.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QVBoxLayout \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qboxlayout.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlayout.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qlayoutitem.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qboxlayout.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qgridlayout.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QHBoxLayout \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QStatusBar \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qstatusbar.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QProgressBar \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qprogressbar.h \
+ H:/qt3/cpu_stat_ansible2v2/headers/progressmanager.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QObject \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qobject.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QTimer \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qtimer.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qbasictimer.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QElapsedTimer \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qelapsedtimer.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/QDragEnterEvent \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qevent.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcoreevent.h \

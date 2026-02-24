@@ -146,11 +146,26 @@ CMakeFiles/CpuStatCheck.dir/src/mainwindow.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/CpuStatCheck.dir/src/mainwindow.cpp.s"
 	C:\Qt\Qt5.12.12\Tools\mingw730_64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S H:\qt3\cpu_stat_ansible2v2\src\mainwindow.cpp -o CMakeFiles\CpuStatCheck.dir\src\mainwindow.cpp.s
 
+CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.obj: CMakeFiles/CpuStatCheck.dir/flags.make
+CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.obj: CMakeFiles/CpuStatCheck.dir/includes_CXX.rsp
+CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.obj: H:/qt3/cpu_stat_ansible2v2/src/progressmanager.cpp
+CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.obj: CMakeFiles/CpuStatCheck.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=H:\qt3\cpu_stat_ansible2v2\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.obj"
+	C:\Qt\Qt5.12.12\Tools\mingw730_64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.obj -MF CMakeFiles\CpuStatCheck.dir\src\progressmanager.cpp.obj.d -o CMakeFiles\CpuStatCheck.dir\src\progressmanager.cpp.obj -c H:\qt3\cpu_stat_ansible2v2\src\progressmanager.cpp
+
+CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.i"
+	C:\Qt\Qt5.12.12\Tools\mingw730_64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E H:\qt3\cpu_stat_ansible2v2\src\progressmanager.cpp > CMakeFiles\CpuStatCheck.dir\src\progressmanager.cpp.i
+
+CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.s"
+	C:\Qt\Qt5.12.12\Tools\mingw730_64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S H:\qt3\cpu_stat_ansible2v2\src\progressmanager.cpp -o CMakeFiles\CpuStatCheck.dir\src\progressmanager.cpp.s
+
 CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj: CMakeFiles/CpuStatCheck.dir/flags.make
 CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj: CMakeFiles/CpuStatCheck.dir/includes_CXX.rsp
 CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj: H:/qt3/cpu_stat_ansible2v2/src/windowgraphics.cpp
 CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj: CMakeFiles/CpuStatCheck.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=H:\qt3\cpu_stat_ansible2v2\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=H:\qt3\cpu_stat_ansible2v2\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj"
 	C:\Qt\Qt5.12.12\Tools\mingw730_64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj -MF CMakeFiles\CpuStatCheck.dir\src\windowgraphics.cpp.obj.d -o CMakeFiles\CpuStatCheck.dir\src\windowgraphics.cpp.obj -c H:\qt3\cpu_stat_ansible2v2\src\windowgraphics.cpp
 
 CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.i: cmake_force
@@ -165,7 +180,7 @@ CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj: CMakeFiles/CpuStatCheck.dir/
 CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj: CMakeFiles/CpuStatCheck.dir/includes_CXX.rsp
 CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj: H:/qt3/cpu_stat_ansible2v2/src/wslchecker.cpp
 CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj: CMakeFiles/CpuStatCheck.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=H:\qt3\cpu_stat_ansible2v2\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=H:\qt3\cpu_stat_ansible2v2\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj"
 	C:\Qt\Qt5.12.12\Tools\mingw730_64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj -MF CMakeFiles\CpuStatCheck.dir\src\wslchecker.cpp.obj.d -o CMakeFiles\CpuStatCheck.dir\src\wslchecker.cpp.obj -c H:\qt3\cpu_stat_ansible2v2\src\wslchecker.cpp
 
 CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.i: cmake_force
@@ -183,6 +198,7 @@ CpuStatCheck_OBJECTS = \
 "CMakeFiles/CpuStatCheck.dir/src/configmanager.cpp.obj" \
 "CMakeFiles/CpuStatCheck.dir/src/main.cpp.obj" \
 "CMakeFiles/CpuStatCheck.dir/src/mainwindow.cpp.obj" \
+"CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.obj" \
 "CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj" \
 "CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj"
 
@@ -194,6 +210,7 @@ CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/src/ansiblerunner.cpp.obj
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/src/configmanager.cpp.obj
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/src/main.cpp.obj
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/src/mainwindow.cpp.obj
+CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.obj
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/src/windowgraphics.cpp.obj
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/src/wslchecker.cpp.obj
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/build.make
@@ -203,7 +220,7 @@ CpuStatCheck.exe: C:/Qt/Qt5.12.12/5.12.12/mingw73_64/lib/libQt5Cored.a
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/linkLibs.rsp
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/objects1.rsp
 CpuStatCheck.exe: CMakeFiles/CpuStatCheck.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=H:\qt3\cpu_stat_ansible2v2\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX executable CpuStatCheck.exe"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=H:\qt3\cpu_stat_ansible2v2\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Linking CXX executable CpuStatCheck.exe"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles\CpuStatCheck.dir\link.txt --verbose=$(VERBOSE)
 	"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different H:/qt3/cpu_stat_ansible2v2/ansible.yml /ansible.yml
 	"C:\Program Files\CMake\bin\cmake.exe" -E make_directory /results

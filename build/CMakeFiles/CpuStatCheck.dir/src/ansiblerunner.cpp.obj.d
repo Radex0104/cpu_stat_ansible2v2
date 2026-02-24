@@ -237,16 +237,54 @@ CMakeFiles/CpuStatCheck.dir/src/ansiblerunner.cpp.obj: \
  C:/Qt/Qt5.12.12/Tools/mingw730_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++/bits/hashtable.h \
  C:/Qt/Qt5.12.12/Tools/mingw730_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++/bits/hashtable_policy.h \
  C:/Qt/Qt5.12.12/Tools/mingw730_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++/bits/unordered_map.h \
+ H:/qt3/cpu_stat_ansible2v2/headers/progressmanager.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/QProgressBar \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qprogressbar.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qtwidgetsglobal.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtguiglobal.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtgui-config.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qtwidgets-config.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qframe.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qwidget.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qwindowdefs.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qwindowdefs_win.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qmargins.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qpaintdevice.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qrect.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qsize.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qpoint.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qpalette.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qcolor.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qrgb.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qrgba64.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qbrush.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qvector.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qmatrix.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qpolygon.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qregion.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qdatastream.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qline.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qtransform.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qpainterpath.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qimage.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qpixelformat.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qpixmap.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qsharedpointer.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qsharedpointer_impl.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qfont.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qfontmetrics.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qfontinfo.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtWidgets/qsizepolicy.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qcursor.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtGui/qkeysequence.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QTimer \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qtimer.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qbasictimer.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QElapsedTimer \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qelapsedtimer.h \
+ H:/qt3/cpu_stat_ansible2v2/headers/common.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QString \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qstring.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QList \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qlist.h \
- H:/qt3/cpu_stat_ansible2v2/headers/configmanager.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QSettings \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qsettings.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qvariant.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qmap.h \
- C:/Qt/Qt5.12.12/Tools/mingw730_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++/variant \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QCoreApplication \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcoreapplication.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcoreevent.h \
@@ -257,6 +295,9 @@ CMakeFiles/CpuStatCheck.dir/src/ansiblerunner.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QTextStream \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qtextstream.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qlocale.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qvariant.h \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qmap.h \
+ C:/Qt/Qt5.12.12/Tools/mingw730_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++/variant \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QDir \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qdir.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qfileinfo.h \
@@ -264,8 +305,7 @@ CMakeFiles/CpuStatCheck.dir/src/ansiblerunner.cpp.obj: \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QDebug \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qdebug.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qtextstream.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qvector.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qset.h \
  C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qcontiguouscache.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qsharedpointer.h \
- C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qsharedpointer_impl.h
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/QRegularExpression \
+ C:/Qt/Qt5.12.12/5.12.12/mingw73_64/include/QtCore/qregularexpression.h

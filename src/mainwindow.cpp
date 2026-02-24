@@ -24,6 +24,9 @@ MainWindow::MainWindow(QWidget *parent)
     checker = new WSLChecker(this);
     configManager = new ConfigManager(this);
     ansibleRunner = new AnsibleRunner(this);
+
+    ansibleRunner->setProgressManager(graphics->getProgressManager());
+
     loadSavedConfiguration();
     setupConnections();
 
@@ -65,7 +68,6 @@ void MainWindow::showEvent(QShowEvent *event)
 
 void MainWindow::setupConnections()
 {
-    // Или можно добавить методы в WindowGraphics для доступа к кнопкам
     connect(graphics->getAddHostButton(), &QPushButton::clicked, this, &MainWindow::onAddHostClicked);
     connect(graphics->getRemoveHostButton(), &QPushButton::clicked, this, &MainWindow::removeHost);
     connect(graphics->getPlayButton(), &QPushButton::clicked, this, &MainWindow::onPlayButtonClicked);
@@ -130,7 +132,6 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 void MainWindow::onWslCheckCompleted(const WSLChecker::WSLInfo &info)
 {
     qDebug() << info.isInstalled;
-    qDebug() << "=== РЕЗУЛЬТАТ ПРОВЕРКИ WSL ===";
     qDebug() << "WSL is installed:" << (info.isInstalled ? "yes" : "no");
     
     if (info.isInstalled) {
@@ -216,10 +217,8 @@ void MainWindow::onAddHostClicked()
         host.sshUser = graphics->getSshUserEdit()->text();
         host.sshPass = graphics->getSshPasswordEdit()->text(); // Сохраняем пароль
 
-        // Формируем отображение с маскированным паролем или без пароля
         QString displayText;
         if (!host.sshPass.isEmpty()) {
-            // Показываем только что пароль установлен, но не сам пароль
             displayText = QString("%1 (%2@%1) [пароль установлен]")
                 .arg(host.address)
                 .arg(host.sshUser);
@@ -232,14 +231,8 @@ void MainWindow::onAddHostClicked()
         graphics->addHostToList(displayText);
         hostsConfig.append(host);
 
-        // Очищаем поля ввода, но оставляем пользователя и пароль, если нужно добавить еще один хост
         graphics->getNewHostEdit()->clear();
-        // Не очищаем пользователя и пароль, чтобы можно было быстро добавить несколько хостов
-        // graphics->getSshUserEdit()->clear();
-        // graphics->getSshPasswordEdit()->clear();
 
-        // Сохраняем конфигурацию
-        // Важно: передаем текущего пользователя из поля, а не пустую строку
         QString currentUser = graphics->getSshUserEdit()->text();
         configManager->saveConfiguration(hostsConfig, currentUser);
 

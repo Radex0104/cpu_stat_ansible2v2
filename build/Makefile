@@ -261,6 +261,30 @@ src/mainwindow.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\CpuStatCheck.dir\build.make CMakeFiles/CpuStatCheck.dir/src/mainwindow.cpp.s
 .PHONY : src/mainwindow.cpp.s
 
+src/progressmanager.obj: src/progressmanager.cpp.obj
+.PHONY : src/progressmanager.obj
+
+# target to build an object file
+src/progressmanager.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\CpuStatCheck.dir\build.make CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.obj
+.PHONY : src/progressmanager.cpp.obj
+
+src/progressmanager.i: src/progressmanager.cpp.i
+.PHONY : src/progressmanager.i
+
+# target to preprocess a source file
+src/progressmanager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\CpuStatCheck.dir\build.make CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.i
+.PHONY : src/progressmanager.cpp.i
+
+src/progressmanager.s: src/progressmanager.cpp.s
+.PHONY : src/progressmanager.s
+
+# target to generate assembly for a file
+src/progressmanager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\CpuStatCheck.dir\build.make CMakeFiles/CpuStatCheck.dir/src/progressmanager.cpp.s
+.PHONY : src/progressmanager.cpp.s
+
 src/windowgraphics.obj: src/windowgraphics.cpp.obj
 .PHONY : src/windowgraphics.obj
 
@@ -334,6 +358,9 @@ help:
 	@echo ... src/mainwindow.obj
 	@echo ... src/mainwindow.i
 	@echo ... src/mainwindow.s
+	@echo ... src/progressmanager.obj
+	@echo ... src/progressmanager.i
+	@echo ... src/progressmanager.s
 	@echo ... src/windowgraphics.obj
 	@echo ... src/windowgraphics.i
 	@echo ... src/windowgraphics.s
