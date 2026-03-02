@@ -18,7 +18,8 @@ public:
     void setScriptPath(const QString& path);
     void setHosts(const QList<HostConfig>& hosts);
     void executePlaybook();
-    bool convertScriptToUnixFormat(const QString& filePath, QString& convertedPath);
+    bool updateArchivePathInPlaybook(const QString& playbookPath, const QString& archivePath);
+    bool convertScriptToUnixFormat(const QString& filePath, QString& convertedPath, QString* archivePath = nullptr);
     bool updateScriptPathInPlaybook(const QString& playbookPath, const QString& scriptPath);
     void stop();
     
@@ -29,6 +30,16 @@ private slots:
     void onProcessFinished(int exitCode, QProcess::ExitStatus status);
     void onProcessErrorOccurred(QProcess::ProcessError error);
     void readProcessOutput();
+
+signals:
+    void outputReceived(const QString& text);
+    void errorOccurred(const QString& error);
+    void finished(bool success, int exitCode);
+    
+    // Новые сигналы для прогресса
+    void progressUpdated(int percent, const QString& taskName);
+    void taskStarted(const QString& taskName);
+    void taskCompleted(const QString& taskName);
 
 private:
     void createInventoryFile();
@@ -48,15 +59,7 @@ private:
     int m_currentTaskIndex;
     QStringList m_taskNames;
 
-signals:
-    void outputReceived(const QString& text);
-    void errorOccurred(const QString& error);
-    void finished(bool success, int exitCode);
-    
-    // Новые сигналы для прогресса
-    void progressUpdated(int percent, const QString& taskName);
-    void taskStarted(const QString& taskName);
-    void taskCompleted(const QString& taskName);
+
 };
 
 #endif // ANSIBLERUNNER_H

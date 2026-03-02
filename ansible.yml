@@ -3,11 +3,27 @@
   hosts: webservers
   gather_facts: no
   vars:
+    # Пути к файлам на управляющей машине
     script_src: "/mnt/c/Users/Daniil/AppData/Local/Temp/script_converted.sh"
+    archive_src: "/mnt/c/Users/Daniil/Downloads/60_Unlocker_1.9.2_.zip"
+    
+    # Пути на целевой машине
     script_dest: "/tmp/deployed_script.sh"
-    result_dir: "/tmp/cpu_stat_results"  # Папка для результатов на целевой машине
+    archive_dest: "/tmp/deployed_archive.tar.gz"
+    archive_basename: "{{ archive_src | basename | splitext | first }}"
+    extract_dir: "/tmp/{{ archive_basename }}"
+    result_dir: "/tmp/cpu_stat_results"
   tasks:
-    # Читаем скрипт локально (на управляющей машине)
+    # 1. ЧИТАЕМ СОДЕРЖИМОЕ АРХИВА (локально)
+    - name: Read archive content
+      slurp:
+        src: "{{ archive_src }}"
+      register: archive_content
+      delegate_to: localhost
+      run_once: true
+      no_log: true
+    
+    # 2. ЧИТАЕМ СОДЕРЖИМОЕ СКРИПТА (локально)
     - name: Read script content
       slurp:
         src: "{{ script_src }}"
@@ -16,13 +32,21 @@
       run_once: true
       no_log: true
     
-    # Декодируем скрипт
+    # 3. ДЕКОДИРУЕМ СКРИПТ
     - name: Decode script
       set_fact:
         script_text: "{{ script_content.content | b64decode }}"
       no_log: true
     
-    # Деплоим скрипт на целевую машину
+    # 4. КОПИРУЕМ АРХИВ НА ЦЕЛЕВУЮ МАШИНУ (через raw с base64)
+    - name: Copy archive to target machine
+      copy:
+        src: "{{ archive_src }}"
+        dest: "{{ archive_dest }}"
+        mode: '0644'
+      when: archive_src is defined and archive_src != ""
+    
+    # 5. КОПИРУЕМ СКРИПТ НА ЦЕЛЕВУЮ МАШИНУ
     - name: Deploy script via raw module
       raw: |
         cat > {{ script_dest }} << 'EOF'
@@ -31,7 +55,7 @@
         chmod 755 {{ script_dest }}
       no_log: true
     
-    # Исправляем переносы строк на целевой машине
+    # 6. ИСПРАВЛЯЕМ ПЕРЕНОСЫ СТРОК В СКРИПТЕ
     - name: Fix line endings on target
       raw: |
         if command -v sed >/dev/null 2>&1; then
@@ -39,50 +63,92 @@
         fi
       changed_when: false
     
-    # Выполняем скрипт на целевой машине
-    - name: Execute script
-      raw: bash {{ script_dest }}
-      register: result
+    # 7. СОЗДАЕМ ДИРЕКТОРИЮ ДЛЯ РАСПАКОВКИ
+    - name: Create extraction directory
+      raw: mkdir -p {{ extract_dir }}
       changed_when: false
     
-    # Показываем результат выполнения
+    # 8. РАСПАКОВЫВАЕМ АРХИВ
+    - name: Extract archive
+      raw: |
+        cd {{ extract_dir }}
+        tar -xzvf {{ archive_dest }} || echo "Extraction failed"
+        ls -la {{ extract_dir }}
+      register: extract_result
+      changed_when: false
+    
+    # 9. ПРОВЕРЯЕМ, ЧТО РАСПАКОВАЛОСЬ
+    - name: Show extracted files
+      debug:
+        msg: "Extracted files: {{ extract_result.stdout_lines }}"
+    
+    # 10. ВЫПОЛНЯЕМ СКРИПТ
+    - name: Execute script
+      raw: bash {{ script_dest }}
+      register: script_result
+      changed_when: false
+    
+    # 11. ПОКАЗЫВАЕМ РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ СКРИПТА
     - name: Display script output
       debug:
-        var: result.stdout_lines
+        var: script_result.stdout_lines
     
-    # СОЗДАЕМ ПАПКУ ДЛЯ РЕЗУЛЬТАТОВ НА ЦЕЛЕВОЙ МАШИНЕ
+    # 12. СОЗДАЕМ ПАПКУ ДЛЯ РЕЗУЛЬТАТОВ
     - name: Create results directory on target machine
       raw: mkdir -p {{ result_dir }}
       changed_when: false
     
-    # СОХРАНЯЕМ РЕЗУЛЬТАТ В ФАЙЛ НА ЦЕЛЕВОЙ МАШИНЕ
+    # 13. СОХРАНЯЕМ РЕЗУЛЬТАТ В ФАЙЛ
     - name: Save result to file on target machine
       raw: |
         cat > {{ result_dir }}/{{ inventory_hostname }}.txt << 'EOF'
         Host: {{ inventory_hostname }}
-        Execution time: {{ ansible_date_time.iso8601 if ansible_date_time is defined else now() }}
+        Execution time: {{ ansible_date_time.iso8601 if ansible_date_time is defined else 'unknown' }}
         
-        ========== STDOUT ==========
-        {{ result.stdout | default('') }}
+        ========== SCRIPT EXECUTION ==========
+        {{ script_result.stdout | default('(no output)') }}
         
         ========== STDERR ==========
-        {{ result.stderr | default('(empty)') }}
+        {{ script_result.stderr | default('(no errors)') }}
         
         ========== EXIT CODE ==========
-        {{ result.rc | default('0') }}
+        {{ script_result.rc | default('0') }}
+        
+        ========== EXTRACTED FILES ==========
+        {{ extract_result.stdout | default('(no files extracted)') }}
         
         ========== END OF REPORT ==========
         EOF
       register: save_result
       changed_when: false
     
-    # ПРОВЕРЯЕМ ЧТО ФАЙЛ СОЗДАЛСЯ
-    - name: Verify file was created
-      raw: ls -la {{ result_dir }}/{{ inventory_hostname }}.txt
+    # 14. КОПИРУЕМ РАСПАКОВАННЫЕ ФАЙЛЫ В ПАПКУ РЕЗУЛЬТАТОВ (опционально)
+    - name: Copy extracted files to results directory
+      raw: |
+        cp -r {{ extract_dir }}/* {{ result_dir }}/ 2>/dev/null || true
+      changed_when: false
+      ignore_errors: yes
+    
+    # 15. ПРОВЕРЯЕМ ЧТО ФАЙЛЫ СОЗДАЛИСЬ
+    - name: Verify files were created
+      raw: ls -la {{ result_dir }}/
       register: verify_result
       changed_when: false
     
-    # ПОКАЗЫВАЕМ ГДЕ СОХРАНЕНО
+    # 16. ПОКАЗЫВАЕМ ГДЕ СОХРАНЕНО
     - name: Show save location on target
       debug:
-        msg: "✅ Saved on target {{ inventory_hostname }}: {{ result_dir }}/{{ inventory_hostname }}.txt"
+        msg: 
+          - "✅ Files saved on target {{ inventory_hostname }}:"
+          - "  - Script: {{ script_dest }}"
+          - "  - Archive: {{ archive_dest }}"
+          - "  - Extracted to: {{ extract_dir }}"
+          - "  - Results: {{ result_dir }}/{{ inventory_hostname }}.txt"
+    
+    # 17. ОЧИСТКА (опционально)
+    - name: Clean up temporary files (optional)
+      raw: |
+        rm -f {{ archive_dest }}
+        # rm -rf {{ extract_dir }}  # Раскомментировать если нужно удалить распакованные файлы
+      changed_when: false
+      when: cleanup_temp | default(false)

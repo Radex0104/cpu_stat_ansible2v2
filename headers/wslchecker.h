@@ -101,6 +101,7 @@ private:
     QTextEdit *m_installOutput = nullptr;
     QPushButton *m_installCloseButton = nullptr;
     QProgressBar *m_installProgressBar = nullptr;
+    bool m_isOfferingAnsibleInstallation;
 };
 
 #endif // WSLCHECKER_H

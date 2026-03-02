@@ -16,7 +16,7 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QApplication>
-
+#include "windows.h"
 // Конструктор
 WSLChecker::WSLChecker(QObject *parent) : QObject(parent)
 {
@@ -192,13 +192,7 @@ void WSLChecker::offerAnsibleInstallation()
     msgBox.setWindowTitle("Ansible не найден");
     msgBox.setText("Ansible не установлен в вашем дистрибутиве WSL.");
     msgBox.setInformativeText(
-        "Хотите установить Ansible сейчас?\n\n"
-        "Будут выполнены следующие команды в вашем дистрибутиве WSL:\n"
-        "• sudo apt update\n"
-        "• sudo apt install software-properties-common\n"
-        "• sudo apt-add-repository ppa:ansible/ansible\n"
-        "• sudo apt install ansible\n\n"
-        "Примечание: Во время установки может потребоваться ввод пароля sudo."
+        "Хотите установить Ansible сейчас?\n"
     );
     
     QPushButton *installButton = msgBox.addButton("Установить Ansible", QMessageBox::AcceptRole);
@@ -215,91 +209,77 @@ void WSLChecker::offerAnsibleInstallation()
 // Установка Ansible в WSL
 void WSLChecker::installAnsibleInWSL()
 {
-    
     QWidget *parent = qobject_cast<QWidget*>(this->parent());
     
     QMessageBox msgBox(parent);
     msgBox.setWindowTitle("Установка Ansible в WSL");
-    msgBox.setText("Следуйте этим шагам для установки Ansible:");
-    msgBox.setInformativeText(
-        "1. Терминал WSL откроется\n"
-        "2. Скопируйте и вставьте эти команды по одной:\n\n"
-        "sudo apt update\n"
-        "sudo apt install -y software-properties-common\n"
-        "sudo apt-add-repository --yes --update ppa:ansible/ansible\n"
-        "sudo apt install -y ansible\n"
-        "ansible --version\n\n"
-        "Вам будет предложено ввести пароль sudo."
-    );
+    msgBox.setText("Ansible будет установлен автоматически.");
     
-    QPushButton *openWslButton = msgBox.addButton("Открыть WSL", QMessageBox::AcceptRole);
+    QStringList commands = {
+        "apt update",
+        "apt install -y software-properties-common",
+        "add-apt-repository --yes --update ppa:ansible/ansible",
+        "apt install -y ansible",
+        "ansible --version"
+    };
+
+    QStringList commandDescriptions = {
+        "Обновление списка пакетов...",
+        "Установка дополнительных компонентов...",
+        "Добавление репозитория Ansible...",
+        "Установка Ansible...",
+        "Проверка версии Ansible..."
+    };
+
+    QString fullCommand = "sudo " + commands.join(" && sudo ");
+    
+    QPushButton *installButton = msgBox.addButton("Установить", QMessageBox::AcceptRole);
     QPushButton *closeButton = msgBox.addButton("Закрыть", QMessageBox::RejectRole);
     
     msgBox.exec();
     
-    if (msgBox.clickedButton() == openWslButton) {
-        // СПОСОБ 1: Запуск через cmd.exe (самый надежный)
-        QStringList args;
-        args << "/c" << "start" << "wsl.exe" << "bash";
-        
-        bool started = QProcess::startDetached("cmd.exe", args);
-        
-        if (!started) {
-            qDebug() << "2 sposob";
+    if (msgBox.clickedButton() == installButton) {
+        // Используем существующий m_ansibleInstallProcess
+        if (!m_installDialog) {
+            m_installDialog = new QDialog(parent);
+            m_installDialog->setWindowTitle("Установка Ansible");
+            m_installDialog->setMinimumWidth(600);
+            m_installDialog->setMinimumHeight(400);
             
-            // СПОСОБ 2: Прямой запуск wsl.exe
-            started = QProcess::startDetached("wsl.exe", QStringList());
+            QVBoxLayout *layout = new QVBoxLayout(m_installDialog);
+            
+            m_installOutput = new QTextEdit(m_installDialog);
+            m_installOutput->setReadOnly(true);
+            m_installOutput->setFontFamily("Courier New");
+            layout->addWidget(m_installOutput);
+            
+            m_installProgressBar = new QProgressBar(m_installDialog);
+            m_installProgressBar->setRange(0, commands.size());
+            m_installProgressBar->setValue(0);
+            layout->addWidget(m_installProgressBar);
+            
+            m_installCloseButton = new QPushButton("Закрыть", m_installDialog);
+            m_installCloseButton->setEnabled(false);
+            layout->addWidget(m_installCloseButton);
+            
+            connect(m_installCloseButton, &QPushButton::clicked, m_installDialog, &QDialog::accept);
         }
         
-        if (!started) {
-            qDebug() << "3 sposob";
-            
-            // СПОСОБ 3: Запуск через полный путь
-            QString wslPath = "C:\\Windows\\System32\\wsl.exe";
-            started = QProcess::startDetached(wslPath, QStringList());
-        }
+        m_installOutput->clear();
+        m_installProgressBar->setRange(0, 0);
+        m_installCloseButton->setEnabled(false);
+        m_installDialog->show();
         
-        if (!started) {
-            qDebug() << "4 sposob";
-            
-            // СПОСОБ 4: Создаем временный batch-файл
-            QString tempDir = QDir::tempPath();
-            QString batchPath = tempDir + "/open_wsl.bat";
-            
-            QFile batchFile(batchPath);
-            if (batchFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-                QTextStream out(&batchFile);
-                out << "@echo off\n";
-                out << "start wsl.exe\n";
-                out << "exit\n";
-                batchFile.close();
-                
-                started = QProcess::startDetached("cmd.exe", QStringList() << "/c" << batchPath);
-            }
-        }
+        // Настраиваем процесс на скрытый запуск
+#ifdef _WIN32
+        m_ansibleInstallProcess->setCreateProcessArgumentsModifier([](QProcess::CreateProcessArguments *args) {
+            args->flags |= CREATE_NO_WINDOW;
+            args->startupInfo->dwFlags |= STARTF_USESHOWWINDOW;
+            args->startupInfo->wShowWindow = SW_HIDE;
+        });
+#endif
         
-        if (started) {
-            
-            QMessageBox msgBox(parent);
-            msgBox.setWindowTitle("Команды для установки Ansible");
-            msgBox.setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint);
-            msgBox.setText("Скопируйте по очереди эти команды и нажмите ПКМ в терминале WSL:");
-            
-            QString commands = 
-                "sudo apt update\n"
-                "sudo apt install -y software-properties-common\n"
-                "sudo apt-add-repository --yes --update ppa:ansible/ansible\n"
-                "sudo apt install -y ansible\n"
-                "ansible --version";
-            
-            msgBox.setInformativeText(commands);
-            msgBox.setDetailedText(commands); // Создает текстовое поле с командами
-            
-            //QPushButton *copyButton = msgBox.addButton("Копировать в буфер", QMessageBox::ActionRole);
-            QPushButton *closeButton = msgBox.addButton("Закрыть", QMessageBox::AcceptRole);
-            
-            msgBox.exec();
-        }
+        m_ansibleInstallProcess->start("wsl", QStringList() << "bash" << "-c" << fullCommand);
     }
 }
 
@@ -745,22 +725,11 @@ void WSLChecker::onDistroInstallFinished(int exitCode, QProcess::ExitStatus exit
     if (m_distroDialog) {
         if (exitCode == 0) {
             m_distroOutput->append("\n✅ Ubuntu успешно установлен!");
-            m_distroOutput->append("\nДистрибутив установлен. Возможно, потребуется:");
-            m_distroOutput->append("1. Запустить Ubuntu из меню Пуск для завершения настройки");
-            m_distroOutput->append("2. Создать имя пользователя и пароль");
-            
-            QMessageBox::information(m_distroDialog, "Успех", 
-                "Ubuntu успешно установлен!\n\n"
-                "Пожалуйста, запустите 'Ubuntu' из меню Пуск для завершения начальной настройки,\n"
-                "затем мы сможем установить Ansible.");
-            
-            // Обновляем информацию о WSL после установки
             checkWSL();
-            
             // Спрашиваем об установке Ansible
-            if (m_lastInfo.hasDistributions) {
+            if (!m_lastInfo.hasDistributions) {
                 QTimer::singleShot(1000, this, [this]() {
-                    offerAnsibleInstallation();
+                    installAnsibleInWSL();
                 });
             }
         } else {
@@ -836,8 +805,7 @@ void WSLChecker::installWsl()
     
     QMessageBox::information(parent, "Установка WSL", 
         "Запуск установки WSL. Это может занять несколько минут.\n"
-        "После установки потребуется перезагрузка компьютера.\n\n"
-        "После перезагрузки программа поможет установить Ubuntu и Ansible.");
+        "После установки может потребоваться перезагрузка компьютера.\n");
     
     QStringList args;
     args << "/c" << "wsl" << "--install";
@@ -856,9 +824,7 @@ void WSLChecker::onInstallProcessFinished(int exitCode, QProcess::ExitStatus exi
     if (exitCode == 0) {
         
         QMessageBox::information(parent, "Установка WSL завершена", 
-            "WSL успешно установлен! Пожалуйста, перезагрузите компьютер.\n\n"
-            "После перезагрузки программа поможет установить Ubuntu и Ansible.");
-        
+            "WSL успешно установлен! Пожалуйста, перезагрузите компьютер и запустите программу повторно, если будут проблемы.\n");
         emit wslSetupFinished(true);
     } else {
         QString error = m_installProcess->readAllStandardError();
