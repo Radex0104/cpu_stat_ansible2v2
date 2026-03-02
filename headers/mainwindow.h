@@ -40,6 +40,7 @@ private slots:
 private:
     void setupConnections();
     void loadSavedConfiguration();
+    void setArchivePath(const QString& path);
     void updatePlayButtonState();
     void checkWSLAndShowStatus();
     void showMessage(const QString &message, bool isError = false);
@@ -52,6 +53,7 @@ private:
     QString currentFilePath;
     QList<HostConfig> hostsConfig;
     QString playbookPath;
+    QString currentArchivePath;
 };
 
 #endif // MAINWINDOW_H

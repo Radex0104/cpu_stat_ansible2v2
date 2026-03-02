@@ -1,0 +1,5 @@
+build/
+.qmake.stash
+CMakeLists.txt.user
+ansible-deployer_resource.rc
+config.ini

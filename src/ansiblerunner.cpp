@@ -21,6 +21,7 @@ AnsibleRunner::AnsibleRunner(QObject *parent)
     connect(ansibleProcess, &QProcess::readyReadStandardError, this, &AnsibleRunner::readProcessOutput);
 
     inventoryPath = QCoreApplication::applicationDirPath() + "/inventory.ini";
+    qDebug() << inventoryPath;
     
     // Предопределенные задачи Ansible
     m_taskNames = QStringList() 
@@ -111,6 +112,7 @@ bool AnsibleRunner::updateScriptPathInPlaybook(const QString& playbookPath, cons
     if (scriptPath.isEmpty()) return false;
 
     QFile playbookFile(playbookPath);
+    qDebug() << playbookPath;
     if (!playbookFile.exists()) {
         emit errorOccurred("Файл ansible.yml не найден в папке проекта!");
         return false;
@@ -125,7 +127,7 @@ bool AnsibleRunner::updateScriptPathInPlaybook(const QString& playbookPath, cons
     playbookFile.close();
 
     QString wslScriptPath = convertToWslPath(scriptPath);
-
+    qDebug() << wslScriptPath;
     QStringList lines = content.split("\n");
     for (int i = 0; i < lines.size(); ++i) {
         if (lines[i].contains("script_src:")) {
@@ -172,7 +174,64 @@ void AnsibleRunner::executePlaybook()
     ansibleProcess->start("wsl", wslArgs);
 }
 
-bool AnsibleRunner::convertScriptToUnixFormat(const QString& filePath, QString& convertedPath)
+bool AnsibleRunner::updateArchivePathInPlaybook(const QString& playbookPath, const QString& archivePath)
+{
+    if (archivePath.isEmpty()) return false;
+
+    QFile playbookFile(playbookPath);
+    qDebug() << "Updating archive path in:" << playbookPath;
+    
+    if (!playbookFile.exists()) {
+        emit errorOccurred("Файл ansible.yml не найден в папке проекта!");
+        return false;
+    }
+
+    if (!playbookFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        emit errorOccurred("Не удалось прочитать файл ansible.yml");
+        return false;
+    }
+
+    QString content = QString::fromUtf8(playbookFile.readAll());
+    playbookFile.close();
+
+    QString wslArchivePath = convertToWslPath(archivePath);
+    qDebug() << "WSL archive path:" << wslArchivePath;
+    
+    QStringList lines = content.split("\n");
+    bool found = false;
+    
+    for (int i = 0; i < lines.size(); ++i) {
+        if (lines[i].contains("archive_src:")) {
+            lines[i] = QString("    archive_src: \"%1\"").arg(wslArchivePath);
+            found = true;
+            qDebug() << "Found and updated archive_src at line" << i;
+            break;
+        }
+    }
+    
+    if (!found) {
+        qDebug() << "Warning: archive_src not found in playbook";
+        // Можно добавить новую строку после script_src
+        for (int i = 0; i < lines.size(); ++i) {
+            if (lines[i].contains("script_src:")) {
+                lines.insert(i + 1, QString("    archive_src: \"%1\"").arg(wslArchivePath));
+                found = true;
+                qDebug() << "Added archive_src after script_src";
+                break;
+            }
+        }
+    }
+
+    if (playbookFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        playbookFile.write(lines.join("\n").toUtf8());
+        playbookFile.close();
+        return found;
+    }
+
+    return false;
+}
+
+bool AnsibleRunner::convertScriptToUnixFormat(const QString& filePath, QString& convertedPath, QString* archivePath)
 {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -185,7 +244,6 @@ bool AnsibleRunner::convertScriptToUnixFormat(const QString& filePath, QString& 
 
     data.replace("\r\n", "\n");
     data.replace("\r", "\n");
-    data.replace('\r', '\n');
 
     QString content = QString::fromUtf8(data);
     content = content.trimmed();
@@ -199,6 +257,7 @@ bool AnsibleRunner::convertScriptToUnixFormat(const QString& filePath, QString& 
     }
 
     QString tempFilePath = QDir::temp().absoluteFilePath("script_converted.sh");
+    
     QFile tempFile(tempFilePath);
     if (!tempFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         emit errorOccurred("Не удалось создать временный файл");
@@ -217,8 +276,31 @@ bool AnsibleRunner::convertScriptToUnixFormat(const QString& filePath, QString& 
     chmod.start("wsl", chmodArgs);
     chmod.waitForFinished(3000);
 
+    // Сохраняем путь к сконвертированному скрипту
     convertedPath = tempFilePath;
-    emit outputReceived("🔄 Скрипт сконвертирован в Unix-формат и подготовлен к выполнению");
+    
+    // Если передан указатель на archivePath (не nullptr), ищем архив
+    if (archivePath != nullptr) {
+        QFileInfo fileInfo(filePath);
+        QString scriptDir = fileInfo.path();
+        
+        // Ищем архив в той же папке, что и скрипт
+        QStringList archiveFilters;
+        archiveFilters << "*.tar.gz" << "*.tgz" << "*.tar" << "*.zip";
+        
+        QDir dir(scriptDir);
+        QStringList archives = dir.entryList(archiveFilters, QDir::Files);
+        
+        if (!archives.isEmpty()) {
+            *archivePath = dir.absoluteFilePath(archives.first());
+            emit outputReceived("📦 Найден архив: " + archives.first());
+        } else {
+            *archivePath = QString();
+            emit outputReceived("⚠️ Архив не найден в папке со скриптом");
+        }
+    }
+
+    emit outputReceived("🔄 Скрипт сконвертирован в Unix-формат");
 
     return true;
 }
