@@ -17,14 +17,14 @@ void WindowGraphics::setupUI()
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
     // ----- СЕКЦИЯ DRAG & DROP -----
-    QLabel *dragDropLabel = new QLabel("Перетащите файл скрипта сюда");
+    QLabel *dragDropLabel = new QLabel("Перетащите архив сюда");
     dragDropLabel->setAlignment(Qt::AlignCenter);
     dragDropLabel->setStyleSheet("QLabel { border: 2px dashed #aaa; padding: 20px; background-color: #f8f8f8; }");
     dragDropLabel->setMinimumHeight(100);
     mainLayout->addWidget(dragDropLabel);
 
     // ----- СЕКЦИЯ ОТОБРАЖЕНИЯ ПУТИ К ФАЙЛУ -----
-    filePathLabel = new QLabel("Файл не выбран");
+    filePathLabel = new QLabel("Архив не выбран");
     filePathLabel->setStyleSheet("QLabel { color: #666; font-size: 10pt; }");
     mainLayout->addWidget(filePathLabel);
 
@@ -35,12 +35,15 @@ void WindowGraphics::setupUI()
     // ---- ПАНЕЛЬ УПРАВЛЕНИЯ ХОСТАМИ ----
     QHBoxLayout *hostsControlLayout = new QHBoxLayout();
     newHostEdit = new QLineEdit();
+    doggySign = new QLabel("@");
     sshUserEdit = new QLineEdit();
     sshPasswordEdit = new QLineEdit();
     statusBar = new QStatusBar();
     
-    sshUserEdit->setPlaceholderText("ubuntu1 (пользователь на сервере)");
-    newHostEdit->setPlaceholderText("Введите адрес хоста (IP или домен)");
+    sshUserEdit->setPlaceholderText("Имя пользователя на сервере");
+    sshUserEdit->setText("astra1");
+    newHostEdit->setPlaceholderText("Введите IP или домен");
+    newHostEdit->setText("192.168.0.");
     sshPasswordEdit->setPlaceholderText("Введите пароль для хоста");
     sshPasswordEdit->setEchoMode(QLineEdit::Password);
     
@@ -48,6 +51,7 @@ void WindowGraphics::setupUI()
     removeHostButton = new QPushButton("Удалить");
 
     hostsControlLayout->addWidget(sshUserEdit);
+    hostsControlLayout->addWidget(doggySign);
     hostsControlLayout->addWidget(newHostEdit);
     hostsControlLayout->addWidget(sshPasswordEdit);
     hostsControlLayout->addWidget(addHostButton);

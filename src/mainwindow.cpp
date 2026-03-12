@@ -15,6 +15,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , currentArchivePath(QString())
 {
     ui->setupUi(this);
 
@@ -61,7 +62,6 @@ void MainWindow::showEvent(QShowEvent *event)
     static bool checked = false;
     if (!checked) {
         checked = true;
-        qDebug() << "Запуск синхронной проверки WSL через 100ms";
         QTimer::singleShot(100, this, &MainWindow::checkWSLAndShowStatus);
     }
 }
@@ -85,13 +85,11 @@ void MainWindow::loadSavedConfiguration()
 
 void MainWindow::checkWSLAndShowStatus()
 {
-    qDebug() << "Выполнение синхронной проверки WSL...";
     
     // Выполняем синхронную проверку
     WSLChecker::WSLInfo info = checker->checkWSL();
     
     // Дополнительная диагностика
-    qDebug() << "Результат проверки:";
     qDebug() << "  isInstalled:" << info.isInstalled;
     qDebug() << "  hasDistributions:" << info.hasDistributions;
     qDebug() << "  errorMessage:" << info.errorMessage;
@@ -114,7 +112,6 @@ void MainWindow::checkWSLAndShowStatus()
 
 void MainWindow::onWslSetupFinished(bool success)
 {
-    qDebug() << "Установка WSL завершена, успех:" << success;
     if (success) {
         // Предлагаем перезагрузить или проверить снова
         QMessageBox::information(this, "Установка завершена", 
@@ -149,7 +146,6 @@ void MainWindow::onWslCheckCompleted(const WSLChecker::WSLInfo &info)
 
 void MainWindow::onWslCheckError(const QString &error)
 {
-    qDebug() << "Ошибка WSL:" << error;
     graphics->appendStatusBar("Ошибка проверки WSL");
 }
 
@@ -159,12 +155,8 @@ void MainWindow::setArchivePath(const QString& path)
     QFileInfo fileInfo(path);
     
     if (!path.isEmpty()) {
-        if (ansibleRunner->updateArchivePathInPlaybook(playbookPath, path)) {
-            graphics->appendOutput("📦 Путь к архиву обновлен: " + fileInfo.fileName());
-            graphics->updateFilePathLabel("Архив загружен: " + fileInfo.fileName(), true);
-        } else {
-            graphics->appendOutput("❌ Не удалось обновить путь к архиву");
-        }
+        // Убираем обновление плейбука здесь, так как оно уже делается в dropEvent
+        graphics->updateFilePathLabel("Архив загружен: " + fileInfo.fileName(), true);
     }
 }
 
@@ -178,75 +170,100 @@ void MainWindow::dropEvent(QDropEvent *event)
         if (!urlList.isEmpty()) {
             QString filePath = urlList.first().toLocalFile();
             QFileInfo fileInfo(filePath);
-
-            if (fileInfo.isFile() && fileInfo.suffix() == "sh") {
-                QString convertedPath;
-                QString archivePath;
+            
+            qDebug() << "=== DROP EVENT ===";
+            qDebug() << "File path:" << filePath;
+            qDebug() << "Is file:" << fileInfo.isFile();
+            qDebug() << "Is dir:" << fileInfo.isDir();
+            qDebug() << "Suffix:" << fileInfo.suffix();
+            qDebug() << "Complete suffix:" << fileInfo.completeSuffix(); // Добавим для отладки
+            
+            emit fileDropped(fileInfo);
+            
+            // Проверяем, является ли файл архивом (включая .bz2)
+            if (fileInfo.isFile()) {
+                QString suffix = fileInfo.suffix().toLower();
+                QString completeSuffix = fileInfo.completeSuffix().toLower();
                 
-                // ВАЖНО: Передаем указатель на archivePath, а не ссылку
-                if (ansibleRunner->convertScriptToUnixFormat(filePath, convertedPath, &archivePath)) {
-                    currentFilePath = convertedPath;
+                qDebug() << "Checking suffixes - suffix:" << suffix << "completeSuffix:" << completeSuffix;
+                
+                // Проверяем все возможные расширения архивов
+                if (suffix == "gz" || suffix == "tgz" || suffix == "tar" || 
+                    suffix == "zip" || suffix == "bz2" || completeSuffix == "tar.bz2") {
+                    
+                    qDebug() << "Archive file detected";
+                    
+                    QString archivePath = filePath;
                     currentArchivePath = archivePath;
+                    setArchivePath(filePath);
+                    graphics->updateFilePathLabel("Выбран архив: " + fileInfo.fileName(), true);
                     
-                    graphics->updateFilePathLabel("Выбран скрипт: " + fileInfo.fileName() + " (сконвертирован)", true);
-
-                    // Обновляем пути в playbook
-                    if (ansibleRunner->updateScriptPathInPlaybook(playbookPath, currentFilePath)) {
-                        qDebug() << "Script path updated in playbook";
-                    }
-                    
-                    if (!archivePath.isEmpty()) {
-                        if (ansibleRunner->updateArchivePathInPlaybook(playbookPath, archivePath)) {
-                            qDebug() << "Archive path updated in playbook";
-                            graphics->appendOutput("📦 Архив добавлен: " + QFileInfo(archivePath).fileName());
-                        }
-                    }
-                }
-            }
-            else if (fileInfo.suffix() == "gz" || fileInfo.suffix() == "tgz" || 
-                     fileInfo.suffix() == "tar" || fileInfo.suffix() == "zip") {
-                // Прямая установка архива
-                setArchivePath(filePath);
-            }
-            else if (fileInfo.isDir()) {
-                // Обработка папки - ищем скрипт и архив
-                QDir dir(filePath);
-                QStringList scripts = dir.entryList(QStringList() << "*.sh", QDir::Files);
-                QStringList archives = dir.entryList(QStringList() << "*.tar.gz" << "*.tgz" << "*.tar" << "*.zip", QDir::Files);
-                
-                if (!scripts.isEmpty()) {
-                    QString scriptPath = dir.absoluteFilePath(scripts.first());
-                    QString archivePath = archives.isEmpty() ? QString() : dir.absoluteFilePath(archives.first());
-                    
-                    QString convertedPath;
-                    // ВАЖНО: Передаем указатель на archivePath
-                    if (ansibleRunner->updateScriptPathInPlaybook(playbookPath, currentFilePath)) {
-                        currentFilePath = convertedPath;
-                        currentArchivePath = archivePath;
-                        
-                        graphics->updateFilePathLabel(
-                            "Выбрана папка: " + fileInfo.fileName() + 
-                            (archivePath.isEmpty() ? "" : " (найден архив)"), 
-                            true
-                        );
-
-                        if (ansibleRunner->updateScriptPathInPlaybook(playbookPath, currentFilePath)) {
-                            qDebug() << "Script path updated in playbook";
-                        }
-                        
-                        if (!archivePath.isEmpty()) {
-                            if (ansibleRunner->updateArchivePathInPlaybook(playbookPath, archivePath)) {
-                                qDebug() << "Archive path updated in playbook";
-                                graphics->appendOutput("📦 Архив найден: " + QFileInfo(archivePath).fileName());
-                            }
-                        }
+                    // Обновляем путь к архиву в плэйбуке
+                    if (ansibleRunner->updateArchivePathInPlaybook(playbookPath, archivePath)) {
+                        graphics->appendOutput("📦 Архив добавлен: " + fileInfo.fileName());
                     }
                 } else {
-                    graphics->updateFilePathLabel("В папке не найдено .sh файлов", false);
+                    qDebug() << "File is not an archive";
                 }
             }
+            else if (fileInfo.isDir()) {
+                qDebug() << "Directory detected";
+                
+                // Обработка папки - ищем архивы через filesFinder
+                QString foundArchivePath;
+                
+                if (ansibleRunner->filesFinder(filePath, &foundArchivePath)) {
+                    qDebug() << "filesFinder returned:" << foundArchivePath;
+                    
+                    if (!foundArchivePath.isEmpty()) {
+                        currentArchivePath = foundArchivePath;
+                        
+                        graphics->updateFilePathLabel(
+                            "Выбрана папка: " + fileInfo.fileName() + "\nНайден архив: " + QFileInfo(foundArchivePath).fileName(), 
+                            true
+                        );
+                        
+                        if (ansibleRunner->updateArchivePathInPlaybook(playbookPath, foundArchivePath)) {
+                            graphics->appendOutput("📦 Архив найден в папке: " + QFileInfo(foundArchivePath).fileName());
+                        }
+                    } else {
+                        qDebug() << "No archive found in directory";
+                        graphics->updateFilePathLabel("В папке не найдено архивов", false);
+                    }
+                } else {
+                    qDebug() << "filesFinder failed";
+                }
+            }
+            
+            qDebug() << "currentArchivePath after drop:" << currentArchivePath;
         }
     }
+}
+
+void MainWindow::onPlayButtonClicked()
+{
+    // Изменяем проверку: теперь проверяем currentArchivePath вместо currentFilePath
+    if (currentArchivePath.isEmpty()) {
+        showMessage("Не выбран архив для установки", true);
+        return;
+    }
+
+    if (hostsConfig.isEmpty()) {
+        showMessage("Не добавлено ни одного хоста", true);
+        return;
+    }
+
+    QFile playbookFile(playbookPath);
+    if (!playbookFile.exists()) {
+        showMessage("Файл ansible.yml не найден в папке проекта!", true);
+        return;
+    }
+
+    graphics->clearOutput();
+    ansibleRunner->setHosts(hostsConfig);
+    // Убираем setScriptPath, так как мы не используем скрипт
+    // ansibleRunner->setScriptPath(currentFilePath);
+    ansibleRunner->executePlaybook();
 }
 
 void MainWindow::onAddHostClicked()
@@ -269,21 +286,17 @@ void MainWindow::onAddHostClicked()
         host.sshPass = graphics->getSshPasswordEdit()->text(); // Сохраняем пароль
 
         QString displayText;
-        if (!host.sshPass.isEmpty()) {
-            displayText = QString("%1 (%2@%1) [пароль установлен]")
-                .arg(host.address)
-                .arg(host.sshUser);
-        } else {
-            displayText = QString("%1 (%2@%1) [без пароля]")
-                .arg(host.address)
-                .arg(host.sshUser);
-        }
+        displayText = QString("%1 (%2@%1)")
+            .arg(host.address)
+            .arg(host.sshUser);
 
         graphics->addHostToList(displayText);
         hostsConfig.append(host);
 
         graphics->getNewHostEdit()->clear();
-
+        graphics->getSshUserEdit()->clear();
+        graphics->getSshPasswordEdit()->clear();
+        
         QString currentUser = graphics->getSshUserEdit()->text();
         configManager->saveConfiguration(hostsConfig, currentUser);
 
@@ -311,30 +324,6 @@ void MainWindow::removeHost()
     } else {
         showMessage("Выберите хост для удаления", true);
     }
-}
-
-void MainWindow::onPlayButtonClicked()
-{
-    if (currentFilePath.isEmpty()) {
-        showMessage("Не выбран скрипт для выполнения", true);
-        return;
-    }
-
-    if (hostsConfig.isEmpty()) {
-        showMessage("Не добавлено ни одного хоста", true);
-        return;
-    }
-
-    QFile playbookFile(playbookPath);
-    if (!playbookFile.exists()) {
-        showMessage("Файл ansible.yml не найден в папке проекта!", true);
-        return;
-    }
-
-    graphics->clearOutput();
-    ansibleRunner->setHosts(hostsConfig);
-    ansibleRunner->setScriptPath(currentFilePath);
-    ansibleRunner->executePlaybook();
 }
 
 void MainWindow::onAnsibleOutput(const QString& text)

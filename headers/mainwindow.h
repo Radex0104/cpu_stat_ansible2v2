@@ -8,6 +8,7 @@
 #include "wslchecker.h"
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QFileInfo>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -54,6 +55,9 @@ private:
     QList<HostConfig> hostsConfig;
     QString playbookPath;
     QString currentArchivePath;
+    
+signals:
+    void fileDropped(const QFileInfo &fileInfo);
 };
 
 #endif // MAINWINDOW_H

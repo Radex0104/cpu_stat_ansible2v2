@@ -19,13 +19,12 @@ public:
     void setHosts(const QList<HostConfig>& hosts);
     void executePlaybook();
     bool updateArchivePathInPlaybook(const QString& playbookPath, const QString& archivePath);
-    bool convertScriptToUnixFormat(const QString& filePath, QString& convertedPath, QString* archivePath = nullptr);
+    bool filesFinder(const QString& filePath, QString* archivePath = nullptr);
     bool updateScriptPathInPlaybook(const QString& playbookPath, const QString& scriptPath);
     void stop();
     
     // Новый метод для установки менеджера прогресса
     void setProgressManager(ProgressManager* manager);
-
 private slots:
     void onProcessFinished(int exitCode, QProcess::ExitStatus status);
     void onProcessErrorOccurred(QProcess::ProcessError error);

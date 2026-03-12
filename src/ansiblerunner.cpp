@@ -107,43 +107,43 @@ void AnsibleRunner::createInventoryFile()
     }
 }
 
-bool AnsibleRunner::updateScriptPathInPlaybook(const QString& playbookPath, const QString& scriptPath)
-{
-    if (scriptPath.isEmpty()) return false;
+// bool AnsibleRunner::updateScriptPathInPlaybook(const QString& playbookPath, const QString& scriptPath)
+// {
+//     if (scriptPath.isEmpty()) return false;
 
-    QFile playbookFile(playbookPath);
-    qDebug() << playbookPath;
-    if (!playbookFile.exists()) {
-        emit errorOccurred("Файл ansible.yml не найден в папке проекта!");
-        return false;
-    }
+//     QFile playbookFile(playbookPath);
+//     qDebug() << playbookPath;
+//     if (!playbookFile.exists()) {
+//         emit errorOccurred("Файл ansible.yml не найден в папке проекта!");
+//         return false;
+//     }
 
-    if (!playbookFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        emit errorOccurred("Не удалось прочитать файл ansible.yml");
-        return false;
-    }
+//     if (!playbookFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+//         emit errorOccurred("Не удалось прочитать файл ansible.yml");
+//         return false;
+//     }
 
-    QString content = QString::fromUtf8(playbookFile.readAll());
-    playbookFile.close();
+//     QString content = QString::fromUtf8(playbookFile.readAll());
+//     playbookFile.close();
 
-    QString wslScriptPath = convertToWslPath(scriptPath);
-    qDebug() << wslScriptPath;
-    QStringList lines = content.split("\n");
-    for (int i = 0; i < lines.size(); ++i) {
-        if (lines[i].contains("script_src:")) {
-            lines[i] = QString("    script_src: \"%1\"").arg(wslScriptPath);
-            break;
-        }
-    }
+//     QString wslScriptPath = convertToWslPath(scriptPath);
+//     qDebug() << wslScriptPath;
+//     QStringList lines = content.split("\n");
+//     for (int i = 0; i < lines.size(); ++i) {
+//         if (lines[i].contains("script_src:")) {
+//             lines[i] = QString("    script_src: \"%1\"").arg(wslScriptPath);
+//             break;
+//         }
+//     }
 
-    if (playbookFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
-        playbookFile.write(lines.join("\n").toUtf8());
-        playbookFile.close();
-        return true;
-    }
+//     if (playbookFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+//         playbookFile.write(lines.join("\n").toUtf8());
+//         playbookFile.close();
+//         return true;
+//     }
 
-    return false;
-}
+//     return false;
+// }
 
 void AnsibleRunner::executePlaybook()
 {
@@ -213,10 +213,9 @@ bool AnsibleRunner::updateArchivePathInPlaybook(const QString& playbookPath, con
         qDebug() << "Warning: archive_src not found in playbook";
         // Можно добавить новую строку после script_src
         for (int i = 0; i < lines.size(); ++i) {
-            if (lines[i].contains("script_src:")) {
+            if (lines[i].contains("vars:")) {
                 lines.insert(i + 1, QString("    archive_src: \"%1\"").arg(wslArchivePath));
                 found = true;
-                qDebug() << "Added archive_src after script_src";
                 break;
             }
         }
@@ -231,76 +230,41 @@ bool AnsibleRunner::updateArchivePathInPlaybook(const QString& playbookPath, con
     return false;
 }
 
-bool AnsibleRunner::convertScriptToUnixFormat(const QString& filePath, QString& convertedPath, QString* archivePath)
+bool AnsibleRunner::filesFinder(const QString& filePath, QString* archivePath)
 {
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) {
-        emit errorOccurred("Не удалось открыть файл для конвертации");
-        return false;
-    }
-
-    QByteArray data = file.readAll();
-    file.close();
-
-    data.replace("\r\n", "\n");
-    data.replace("\r", "\n");
-
-    QString content = QString::fromUtf8(data);
-    content = content.trimmed();
-
-    if (!content.startsWith("#!")) {
-        content = "#!/bin/bash\n\n" + content;
-    }
-
-    if (!content.endsWith('\n')) {
-        content += '\n';
-    }
-
-    QString tempFilePath = QDir::temp().absoluteFilePath("script_converted.sh");
-    
-    QFile tempFile(tempFilePath);
-    if (!tempFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        emit errorOccurred("Не удалось создать временный файл");
-        return false;
-    }
-
-    QTextStream out(&tempFile);
-    out.setCodec("UTF-8");
-    out << content;
-    tempFile.close();
-
-    QStringList chmodArgs;
-    chmodArgs << "--" << "chmod" << "+x" << convertToWslPath(tempFilePath);
-
-    QProcess chmod;
-    chmod.start("wsl", chmodArgs);
-    chmod.waitForFinished(3000);
-
-    // Сохраняем путь к сконвертированному скрипту
-    convertedPath = tempFilePath;
-    
     // Если передан указатель на archivePath (не nullptr), ищем архив
     if (archivePath != nullptr) {
         QFileInfo fileInfo(filePath);
-        QString scriptDir = fileInfo.path();
+        QString searchDir;
         
-        // Ищем архив в той же папке, что и скрипт
+        // Определяем директорию для поиска
+        if (fileInfo.isDir()) {
+            // Если это папка, ищем в ней
+            searchDir = filePath;
+        } else {
+            // Если это файл, ищем в его папке
+            searchDir = fileInfo.path();
+        }
+        
+        emit outputReceived("🔍 Поиск архивов в: " + searchDir);
+        
+        // Ищем архивы в указанной директории
         QStringList archiveFilters;
-        archiveFilters << "*.tar.gz" << "*.tgz" << "*.tar" << "*.zip";
+        archiveFilters << "*.tar.gz" << "*.tgz" << "*.tar" << "*.zip" << "*.tar.bz2";
         
-        QDir dir(scriptDir);
+        QDir dir(searchDir);
         QStringList archives = dir.entryList(archiveFilters, QDir::Files);
         
         if (!archives.isEmpty()) {
             *archivePath = dir.absoluteFilePath(archives.first());
             emit outputReceived("📦 Найден архив: " + archives.first());
+            qDebug() << "Archive found:" << *archivePath;
         } else {
             *archivePath = QString();
-            emit outputReceived("⚠️ Архив не найден в папке со скриптом");
+            emit outputReceived("⚠️ Архивы не найдены в: " + searchDir);
+            qDebug() << "No archives found in:" << searchDir;
         }
     }
-
-    emit outputReceived("🔄 Скрипт сконвертирован в Unix-формат");
 
     return true;
 }

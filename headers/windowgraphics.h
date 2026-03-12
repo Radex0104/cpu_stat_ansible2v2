@@ -49,6 +49,7 @@ private:
 
     // Элементы интерфейса
     QLabel *filePathLabel;
+    QLabel *doggySign;
     QLineEdit *newHostEdit;
     QLineEdit *sshUserEdit;
     QLineEdit *sshPasswordEdit;
