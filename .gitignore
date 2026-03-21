@@ -1,5 +1,48 @@
+# Build directories
 build/
+cmake-build-*/
+out/
+Debug/
+Release/
+
+# Qt files
 .qmake.stash
 CMakeLists.txt.user
-ansible-deployer_resource.rc
+*.pro.user
+*.user
+*.user.*
+
+# Config files
 config.ini
+*.rc
+!*.rc
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Compiled files
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
