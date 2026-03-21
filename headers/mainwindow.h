@@ -38,6 +38,11 @@ private slots:
     void onWslCheckError(const QString &error);
     void onWslSetupFinished(bool success);
 
+    void onPythonFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void onPythonError(QProcess::ProcessError error);
+    void onPythonOutput();
+    void onPythonErrorOutput();
+    
 private:
     void setupConnections();
     void loadSavedConfiguration();
@@ -55,7 +60,13 @@ private:
     QList<HostConfig> hostsConfig;
     QString playbookPath;
     QString currentArchivePath;
-    
+    // Для работы с Python скриптом
+    QProcess *pythonProcess;
+    QString pythonScriptPath;
+
+    // Методы для работы с данными из Prometheus
+    void fetchPrometheusData();
+
 signals:
     void fileDropped(const QFileInfo &fileInfo);
 };

@@ -9,7 +9,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_PREFIX_PATH "C:/Qt/Qt5.12.12/5.12.12/mingw73_64")
 
 # Ищем Qt5
-find_package(Qt5 REQUIRED COMPONENTS Core Widgets Gui)
+find_package(Qt5 REQUIRED COMPONENTS Core Widgets Gui Charts)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/headers)
 
 file(GLOB SOURCES
@@ -36,6 +36,7 @@ target_link_libraries(CpuStatCheck
     Qt5::Core
     Qt5::Widgets
     Qt5::Gui
+    Qt5::Charts
 )
 
 # Создаем папку для результатов

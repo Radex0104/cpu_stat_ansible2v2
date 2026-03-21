@@ -11,11 +11,13 @@
 #include <QDropEvent>
 #include <QUrl>
 #include <QTimer>
+#include <QProcess>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , currentArchivePath(QString())
+    , pythonProcess(nullptr)
 {
     ui->setupUi(this);
 
@@ -38,7 +40,13 @@ MainWindow::MainWindow(QWidget *parent)
     playbookPath = QCoreApplication::applicationDirPath() + "/../ansible.yml";
     playbookPath = QDir::cleanPath(playbookPath);
     
+    // Путь к Python скрипту
+    pythonScriptPath = QCoreApplication::applicationDirPath() + "/../cicd.py";
+    pythonScriptPath = QDir::cleanPath(pythonScriptPath);
+    
     qDebug() << "Playbook path:" << playbookPath;
+    qDebug() << "Python script path:" << pythonScriptPath;
+    
     ansibleRunner->setPlaybookPath(playbookPath);
 
     connect(ansibleRunner, &AnsibleRunner::outputReceived, this, &MainWindow::onAnsibleOutput);
@@ -46,12 +54,14 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ansibleRunner, &AnsibleRunner::errorOccurred, this, &MainWindow::onAnsibleError);
     connect(checker, SIGNAL(wslSetupFinished(bool)),
             this, SLOT(onWslSetupFinished(bool)));
-    
-    // connect(checker, SIGNAL(wslSetupFinished(bool)), this, SLOT(onWslSetupFinished(bool)));
 }
 
 MainWindow::~MainWindow()
 {
+    if (pythonProcess && pythonProcess->state() != QProcess::NotRunning) {
+        pythonProcess->terminate();
+        pythonProcess->waitForFinished(3000);
+    }
     delete ui;
 }
 
@@ -85,17 +95,14 @@ void MainWindow::loadSavedConfiguration()
 
 void MainWindow::checkWSLAndShowStatus()
 {
-    
     // Выполняем синхронную проверку
     WSLChecker::WSLInfo info = checker->checkWSL();
     
-    // Дополнительная диагностика
     qDebug() << "  isInstalled:" << info.isInstalled;
     qDebug() << "  hasDistributions:" << info.hasDistributions;
     qDebug() << "  errorMessage:" << info.errorMessage;
     qDebug() << "  distributions:" << info.distributions;
     
-    // Показываем результат в статус-баре
     if (info.isInstalled) {
         if (info.hasDistributions) {
             QString status = "WSL готов: " + info.distributions.join(", ");
@@ -113,7 +120,6 @@ void MainWindow::checkWSLAndShowStatus()
 void MainWindow::onWslSetupFinished(bool success)
 {
     if (success) {
-        // Предлагаем перезагрузить или проверить снова
         QMessageBox::information(this, "Установка завершена", 
             "Установка WSL завершена. После перезагрузки компьютера программа автоматически проверит наличие WSL.");
     }
@@ -155,7 +161,6 @@ void MainWindow::setArchivePath(const QString& path)
     QFileInfo fileInfo(path);
     
     if (!path.isEmpty()) {
-        // Убираем обновление плейбука здесь, так как оно уже делается в dropEvent
         graphics->updateFilePathLabel("Архив загружен: " + fileInfo.fileName(), true);
     }
 }
@@ -176,18 +181,16 @@ void MainWindow::dropEvent(QDropEvent *event)
             qDebug() << "Is file:" << fileInfo.isFile();
             qDebug() << "Is dir:" << fileInfo.isDir();
             qDebug() << "Suffix:" << fileInfo.suffix();
-            qDebug() << "Complete suffix:" << fileInfo.completeSuffix(); // Добавим для отладки
+            qDebug() << "Complete suffix:" << fileInfo.completeSuffix();
             
             emit fileDropped(fileInfo);
             
-            // Проверяем, является ли файл архивом (включая .bz2)
             if (fileInfo.isFile()) {
                 QString suffix = fileInfo.suffix().toLower();
                 QString completeSuffix = fileInfo.completeSuffix().toLower();
                 
                 qDebug() << "Checking suffixes - suffix:" << suffix << "completeSuffix:" << completeSuffix;
                 
-                // Проверяем все возможные расширения архивов
                 if (suffix == "gz" || suffix == "tgz" || suffix == "tar" || 
                     suffix == "zip" || suffix == "bz2" || completeSuffix == "tar.bz2") {
                     
@@ -198,7 +201,6 @@ void MainWindow::dropEvent(QDropEvent *event)
                     setArchivePath(filePath);
                     graphics->updateFilePathLabel("Выбран архив: " + fileInfo.fileName(), true);
                     
-                    // Обновляем путь к архиву в плэйбуке
                     if (ansibleRunner->updateArchivePathInPlaybook(playbookPath, archivePath)) {
                         graphics->appendOutput("📦 Архив добавлен: " + fileInfo.fileName());
                     }
@@ -209,7 +211,6 @@ void MainWindow::dropEvent(QDropEvent *event)
             else if (fileInfo.isDir()) {
                 qDebug() << "Directory detected";
                 
-                // Обработка папки - ищем архивы через filesFinder
                 QString foundArchivePath;
                 
                 if (ansibleRunner->filesFinder(filePath, &foundArchivePath)) {
@@ -240,9 +241,89 @@ void MainWindow::dropEvent(QDropEvent *event)
     }
 }
 
+// Запуск Python скрипта для получения данных из Prometheus
+void MainWindow::fetchPrometheusData()
+{
+    if (!QFile::exists(pythonScriptPath)) {
+        graphics->appendOutput("⚠️ Python скрипт не найден: " + pythonScriptPath);
+        return;
+    }
+    
+    graphics->appendOutput("📊 Запрос данных из Prometheus...");
+    
+    // Запускаем Python процесс
+    pythonProcess = new QProcess(this);
+    
+    QStringList arguments;
+    arguments << pythonScriptPath;
+    
+    connect(pythonProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, &MainWindow::onPythonFinished);
+    connect(pythonProcess, &QProcess::errorOccurred,
+            this, &MainWindow::onPythonError);
+    connect(pythonProcess, &QProcess::readyReadStandardOutput,
+            this, &MainWindow::onPythonOutput);
+    connect(pythonProcess, &QProcess::readyReadStandardError,
+            this, &MainWindow::onPythonErrorOutput);
+    
+    pythonProcess->start("python", arguments);
+    
+    // Таймаут 30 секунд
+    QTimer::singleShot(30000, this, [this]() {
+        if (pythonProcess && pythonProcess->state() != QProcess::NotRunning) {
+            pythonProcess->terminate();
+            graphics->appendOutput("⚠️ Таймаут получения данных из Prometheus");
+        }
+    });
+}
+
+void MainWindow::onPythonFinished(int exitCode, QProcess::ExitStatus exitStatus)
+{
+    if (exitCode == 0) {
+        graphics->appendOutput("✅ Данные из Prometheus успешно получены");
+    } else {
+        graphics->appendOutput("⚠️ Ошибка выполнения Python скрипта (код: " + QString::number(exitCode) + ")");
+    }
+    
+    if (pythonProcess) {
+        pythonProcess->deleteLater();
+        pythonProcess = nullptr;
+    }
+}
+
+void MainWindow::onPythonError(QProcess::ProcessError error)
+{
+    graphics->appendOutput("⚠️ Ошибка запуска Python: " + QString::number(error));
+}
+
+void MainWindow::onPythonOutput()
+{
+    if (!pythonProcess) return;
+    
+    QString output = QString::fromUtf8(pythonProcess->readAllStandardOutput());
+    if (!output.trimmed().isEmpty()) {
+        // Если скрипт вывел JSON данные, передаем их в графическое окно
+        if (output.trimmed().startsWith("{") && output.trimmed().contains("results")) {
+            graphics->appendOutput("📈 Получены данные для графиков");
+            graphics->onGraphDataReceived(output.trimmed());
+        } else {
+            qDebug() << "Python output:" << output;
+        }
+    }
+}
+
+void MainWindow::onPythonErrorOutput()
+{
+    if (!pythonProcess) return;
+    
+    QString error = QString::fromUtf8(pythonProcess->readAllStandardError());
+    if (!error.trimmed().isEmpty()) {
+        graphics->appendOutput("⚠️ " + error.trimmed());
+    }
+}
+
 void MainWindow::onPlayButtonClicked()
 {
-    // Изменяем проверку: теперь проверяем currentArchivePath вместо currentFilePath
     if (currentArchivePath.isEmpty()) {
         showMessage("Не выбран архив для установки", true);
         return;
@@ -261,9 +342,12 @@ void MainWindow::onPlayButtonClicked()
 
     graphics->clearOutput();
     ansibleRunner->setHosts(hostsConfig);
-    // Убираем setScriptPath, так как мы не используем скрипт
-    // ansibleRunner->setScriptPath(currentFilePath);
     ansibleRunner->executePlaybook();
+}
+
+void MainWindow::onAnsibleOutput(const QString& text)
+{
+    graphics->appendOutput(text);
 }
 
 void MainWindow::onAddHostClicked()
@@ -326,15 +410,17 @@ void MainWindow::removeHost()
     }
 }
 
-void MainWindow::onAnsibleOutput(const QString& text)
-{
-    graphics->appendOutput(text);
-}
-
 void MainWindow::onAnsibleFinished(bool success, int exitCode)
 {
-    Q_UNUSED(success)
-    Q_UNUSED(exitCode)
+    if (success) {
+        graphics->appendOutput("✅ Ansible выполнен успешно");
+        
+        // После успешного выполнения Ansible, запускаем получение данных из Prometheus
+        graphics->appendOutput("📊 Запуск получения данных из Prometheus...");
+        fetchPrometheusData();
+    } else {
+        graphics->appendOutput("❌ Ошибка выполнения Ansible (код: " + QString::number(exitCode) + ")");
+    }
 }
 
 void MainWindow::onAnsibleError(const QString& message)
