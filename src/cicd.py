@@ -3,6 +3,7 @@ import requests
 import json
 import sys
 import traceback
+import math
 
 
 def request_prometheus(prometheus_url: str, date_start="2026-01-15 10:32:40", date_end="2026-01-15 10:52:57"):
@@ -60,6 +61,12 @@ def request_prometheus(prometheus_url: str, date_start="2026-01-15 10:32:40", da
         raise
 
 
+def clean_value(value):
+    if isInstance(value, float):
+            if math.isnan(value) or math.isinf(value):
+                return 0.0
+            return value
+
 def convert_to_graph_data(prometheus_data):
     """Преобразование данных Prometheus в формат для Qt графика"""
     
@@ -67,6 +74,14 @@ def convert_to_graph_data(prometheus_data):
         "results": []
     }
     
+    if "results" in prometheus_data and isInstance(prometheus_data["results"], list):
+        for item in prometheus_data["results"]:
+            if "values" in item:
+                item["values"] = [clean_value(v) for v in item["values"]]
+            if item.get("timestamps") and len(item["timestamps"]) > 0:
+                result_data["results"].append(item)
+        return result_data
+
     if prometheus_data.get('status') == 'success':
         for result in prometheus_data['data']['result']:
             metric = result['metric']
@@ -102,8 +117,8 @@ if __name__ == "__main__":
         # ПРАВИЛЬНО: дата начала РАНЬШЕ даты окончания
         result = request_prometheus(
             prometheus_url="http://172.16.178.6:9090",
-            date_start="2026-01-15 10:32:40",  # ← РАНЬШЕ
-            date_end="2026-01-15 12:52:57"  # ← ПОЗЖЕ
+            date_start="2026-03-23 08:42:04",  # ← РАНЬШЕ
+            date_end="2026-03-23 09:39:41"  # ← ПОЗЖЕ
         )
         
         # Преобразуем в формат для графика

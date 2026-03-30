@@ -1,4 +1,3 @@
-// windowgraphics.h
 #ifndef WINDOWGRAPHICS_H
 #define WINDOWGRAPHICS_H
 
@@ -13,11 +12,12 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGroupBox>
+#include <QtCharts>
 #include "ProgressManager.h"
+#include "graphmanager.h"
 
-// Предварительные объявления
-class GraphManager;
-class GraphWidget;
+// Предварительное объявление
+QT_CHARTS_USE_NAMESPACE
 
 class WindowGraphics : public QWidget
 {
@@ -27,7 +27,6 @@ public:
     explicit WindowGraphics(QWidget *parent = nullptr);
     ~WindowGraphics();
 
-    // Методы для управления отображением
     void updateFilePathLabel(const QString& text, bool success = true);
     void appendOutput(const QString& text);
     void appendStatusBar(const QString& text);
@@ -35,14 +34,12 @@ public:
     void addHostToList(const QString& hostInfo);
     void removeHostFromList(int row);
     
-    // Методы для работы с графиками
     void processGraphData(const QString& jsonData);
     void clearGraphs();
     void exportGraphs(const QString& filePath);
     void importGraphs(const QString& filePath);
     void setGraphOpacity(double opacity);
     
-    // Геттеры для доступа к UI элементам
     QLineEdit* getNewHostEdit() const { return newHostEdit; }
     QLineEdit* getSshUserEdit() const { return sshUserEdit; }
     QLineEdit* getSshPasswordEdit() const { return sshPasswordEdit; }
@@ -61,10 +58,9 @@ public slots:
 
 private:
     void setupUI();
-    void setupGraphWidget();
     void updatePlayButtonState();
+    void plotGraphs(const QVector<GraphSeries>& series);
     
-    // UI компоненты
     QLabel *dragDropLabel;
     QLabel *filePathLabel;
     QLineEdit *newHostEdit;
@@ -79,10 +75,9 @@ private:
     QTextEdit *outputTextEdit;
     QStatusBar *statusBar;
     
-    // Компоненты для графиков
-    GraphWidget *graphWidget;
     GraphManager *graphManager;
-    QWidget *graphWindow;
+    QChartView *m_chartView;
+    QVBoxLayout *m_graphLayout;
     ProgressManager *progressManager;
 };
 

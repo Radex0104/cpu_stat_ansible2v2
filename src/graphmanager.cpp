@@ -2,9 +2,16 @@
 #include <QDebug>
 #include <QFile>
 #include <QRandomGenerator>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QJsonValue>
+#include <QPointF>
+#include <numeric>
+#include <algorithm>
 
 // Статическая инициализация палитры цветов
-const QVector<QColor> GraphManager::DEFAULT_PALETTE = {
+const QVector<QColor> GraphManager::s_defaultPalette = {
     QColor(255, 107, 107),   // Красный
     QColor(78, 205, 196),    // Бирюзовый
     QColor(69, 183, 209),    // Голубой
@@ -44,15 +51,15 @@ void GraphManager::addGraphData(const GraphData& data)
 {
     GraphData newData = data;
     
-    // Если цвет не задан, генерируем автоматически
     if (!newData.color.isValid()) {
         newData.color = generateColor();
     }
     
-    // Если прозрачность не задана, используем глобальную
     if (newData.opacity <= 0 || newData.opacity > 1) {
         newData.opacity = m_globalOpacity;
     }
+    
+    calculateStatistics(newData);
     
     m_graphs.append(newData);
     emit graphDataAdded(newData);
@@ -90,6 +97,24 @@ bool GraphManager::hasGraphs() const
     return !m_graphs.isEmpty();
 }
 
+QVector<MetricStats> GraphManager::getStatistics() const
+{
+    QVector<MetricStats> stats;
+    
+    for (const GraphData& graph : m_graphs) {
+        stats.append(MetricStats(
+            graph.label,
+            graph.code,
+            graph.minValue,
+            graph.maxValue,
+            graph.meanValue,
+            graph.values.size()
+        ));
+    }
+    
+    return stats;
+}
+
 bool GraphManager::processPrometheusData(const QJsonDocument& jsonData)
 {
     if (jsonData.isNull() || jsonData.isEmpty()) {
@@ -118,17 +143,14 @@ bool GraphManager::processPrometheusData(const QString& jsonString)
 
 bool GraphManager::parsePrometheusData(const QJsonObject& root)
 {
-    // Очищаем старые данные
     clearAllGraphs();
     
-    // Проверяем статус ответа
     if (!root.contains("status") || root["status"].toString() != "success") {
         QString errorMsg = root["error"].toString("Неизвестная ошибка Prometheus");
         emit errorOccurred(QString("Ошибка Prometheus: %1").arg(errorMsg));
         return false;
     }
     
-    // Получаем данные
     QJsonObject dataObj = root["data"].toObject();
     if (!dataObj.contains("result")) {
         emit errorOccurred("Отсутствуют данные result в ответе");
@@ -136,17 +158,19 @@ bool GraphManager::parsePrometheusData(const QJsonObject& root)
     }
     
     QJsonArray results = dataObj["result"].toArray();
+    int processedCount = 0;
     
-    // Обрабатываем каждую метрику
     for (const QJsonValue& resultValue : results) {
         QJsonObject result = resultValue.toObject();
         
-        // Получаем метки
         QJsonObject metric = result["metric"].toObject();
         QString label = metric["label"].toString("unknown");
-        QString code = metric["code"].toString("unknown");
+        QString code = metric["code"].toString("");
         
-        // Получаем значения
+        if (shouldSkipMetric(label)) {
+            continue;
+        }
+        
         QJsonArray values = result["values"].toArray();
         
         QVector<double> timestamps;
@@ -156,7 +180,7 @@ bool GraphManager::parsePrometheusData(const QJsonObject& root)
             QJsonArray point = pointValue.toArray();
             if (point.size() >= 2) {
                 double timestamp = point[0].toDouble();
-                double value = point[1].toDouble();
+                double value = point[1].toString().toDouble();
                 
                 timestamps.append(timestamp);
                 metricValues.append(value);
@@ -165,18 +189,83 @@ bool GraphManager::parsePrometheusData(const QJsonObject& root)
         
         if (!timestamps.isEmpty()) {
             addGraphData(label, code, timestamps, metricValues);
+            processedCount++;
         }
+    }
+    
+    if (processedCount == 0) {
+        emit errorOccurred("Нет данных для отображения после фильтрации");
+        return false;
     }
     
     emit graphDataUpdated();
     return true;
 }
 
+QVector<GraphSeries> GraphManager::getGraphSeries() const
+{
+    QVector<GraphSeries> series;
+    
+    for (const GraphData& data : m_graphs) {
+        GraphSeries s;
+        s.name = QString("%1 (min: %2 ms, max: %3 ms, mean: %4 ms)")
+            .arg(data.label)
+            .arg(data.minValue, 0, 'f', 2)
+            .arg(data.maxValue, 0, 'f', 2)
+            .arg(data.meanValue, 0, 'f', 2);
+        s.color = data.color;
+        s.minValue = data.minValue;
+        s.maxValue = data.maxValue;
+        s.meanValue = data.meanValue;
+        
+        for (int i = 0; i < data.timestamps.size(); ++i) {
+            s.points.append(QPointF(data.timestamps[i], data.values[i]));
+        }
+        
+        series.append(s);
+    }
+    
+    return series;
+}
+
+void GraphManager::calculateStatistics(GraphData& data)
+{
+    if (data.values.isEmpty()) {
+        data.minValue = 0;
+        data.maxValue = 0;
+        data.meanValue = 0;
+        return;
+    }
+    
+    data.minValue = *std::min_element(data.values.begin(), data.values.end());
+    data.maxValue = *std::max_element(data.values.begin(), data.values.end());
+    
+    double sum = std::accumulate(data.values.begin(), data.values.end(), 0.0);
+    data.meanValue = sum / data.values.size();
+}
+
+bool GraphManager::shouldSkipMetric(const QString& label)
+{
+    QStringList skipPatterns = {
+        "Transaction",
+        "Debug",
+        "complex",
+        "unknown"
+    };
+    
+    for (const QString& pattern : skipPatterns) {
+        if (label.contains(pattern, Qt::CaseInsensitive)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 void GraphManager::setGlobalOpacity(double opacity)
 {
     m_globalOpacity = qBound(0.0, opacity, 1.0);
     
-    // Обновляем прозрачность для всех существующих графиков
     for (GraphData& data : m_graphs) {
         data.opacity = m_globalOpacity;
     }
@@ -194,7 +283,6 @@ void GraphManager::setColorPalette(const QVector<QColor>& palette)
     m_colorPalette = palette;
     m_currentColorIndex = 0;
     
-    // Перегенерация цветов для существующих графиков
     for (int i = 0; i < m_graphs.size(); ++i) {
         if (i < m_colorPalette.size()) {
             m_graphs[i].color = m_colorPalette[i];
@@ -208,14 +296,13 @@ void GraphManager::setColorPalette(const QVector<QColor>& palette)
 
 void GraphManager::resetColorPalette()
 {
-    m_colorPalette = DEFAULT_PALETTE;
+    m_colorPalette = s_defaultPalette;
     m_currentColorIndex = 0;
 }
 
 QColor GraphManager::generateColor()
 {
     if (m_colorPalette.isEmpty()) {
-        // Если палитра пуста, генерируем случайный цвет
         return QColor(
             QRandomGenerator::global()->bounded(256),
             QRandomGenerator::global()->bounded(256),
@@ -237,15 +324,16 @@ bool GraphManager::exportToJson(const QString& filePath) const
         graphObj["label"] = data.label;
         graphObj["code"] = data.code;
         graphObj["opacity"] = data.opacity;
+        graphObj["minValue"] = data.minValue;
+        graphObj["maxValue"] = data.maxValue;
+        graphObj["meanValue"] = data.meanValue;
         
-        // Сохраняем цвет
         QJsonObject colorObj;
         colorObj["red"] = data.color.red();
         colorObj["green"] = data.color.green();
         colorObj["blue"] = data.color.blue();
         graphObj["color"] = colorObj;
         
-        // Сохраняем данные
         QJsonArray timestampsArray;
         QJsonArray valuesArray;
         
@@ -303,8 +391,10 @@ bool GraphManager::importFromJson(const QString& filePath)
         graphData.label = graphObj["label"].toString();
         graphData.code = graphObj["code"].toString();
         graphData.opacity = graphObj["opacity"].toDouble(0.7);
+        graphData.minValue = graphObj["minValue"].toDouble(0);
+        graphData.maxValue = graphObj["maxValue"].toDouble(0);
+        graphData.meanValue = graphObj["meanValue"].toDouble(0);
         
-        // Загружаем цвет
         QJsonObject colorObj = graphObj["color"].toObject();
         graphData.color = QColor(
             colorObj["red"].toInt(),
@@ -312,7 +402,6 @@ bool GraphManager::importFromJson(const QString& filePath)
             colorObj["blue"].toInt()
         );
         
-        // Загружаем данные
         QJsonArray timestampsArray = graphObj["timestamps"].toArray();
         QJsonArray valuesArray = graphObj["values"].toArray();
         
@@ -331,3 +420,5 @@ bool GraphManager::importFromJson(const QString& filePath)
     emit graphDataUpdated();
     return true;
 }
+
+#include "moc_graphmanager.cpp"

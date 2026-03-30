@@ -71,78 +71,78 @@
     #     script_text: "{{ script_content.content | b64decode }}"
     #   no_log: true
 
-    # 4. ПРОВЕРЯЕМ НАЛИЧИЕ НЕОБХОДИМЫХ ПАКЕТОВ
-    - name: Ensure required packages are installed
-      raw: |
-        missing_pkgs=""
-        for cmd in rsync bzip2 tar; do
-          if ! command -v $cmd >/dev/null 2>&1; then
-            missing_pkgs="$missing_pkgs $cmd"
-          fi
-        done
-        if ! command -v pass >/dev/null 2>&1; then
-          echo "Installing pass..."
-          sudo apt-get update && sudo apt install -y pass
-        fi
-        if [ -n "$missing_pkgs" ]; then
-          echo "Installing missing packages: $missing_pkgs"
-          if command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y $missing_pkgs
-          elif command -v yum >/dev/null 2>&1; then
-            sudo yum install -y $missing_pkgs
-          elif command -v dnf >/dev/null 2>&1; then
-            sudo dnf install -y $missing_pkgs
-          else
-            echo "ERROR: Cannot install packages automatically: $missing_pkgs" >&2
-            exit 1
-          fi
-        else
-          echo "All required packages are already installed"
-        fi
+    # # 4. ПРОВЕРЯЕМ НАЛИЧИЕ НЕОБХОДИМЫХ ПАКЕТОВ
+    # - name: Ensure required packages are installed
+    #   raw: |
+    #     missing_pkgs=""
+    #     for cmd in rsync bzip2 tar; do
+    #       if ! command -v $cmd >/dev/null 2>&1; then
+    #         missing_pkgs="$missing_pkgs $cmd"
+    #       fi
+    #     done
+    #     if ! command -v pass >/dev/null 2>&1; then
+    #       echo "Installing pass..."
+    #       sudo apt-get update && sudo apt install -y pass
+    #     fi
+    #     if [ -n "$missing_pkgs" ]; then
+    #       echo "Installing missing packages: $missing_pkgs"
+    #       if command -v apt-get >/dev/null 2>&1; then
+    #         sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y $missing_pkgs
+    #       elif command -v yum >/dev/null 2>&1; then
+    #         sudo yum install -y $missing_pkgs
+    #       elif command -v dnf >/dev/null 2>&1; then
+    #         sudo dnf install -y $missing_pkgs
+    #       else
+    #         echo "ERROR: Cannot install packages automatically: $missing_pkgs" >&2
+    #         exit 1
+    #       fi
+    #     else
+    #       echo "All required packages are already installed"
+    #     fi
         
-        # Проверяем установку bzip2 отдельно
-        if command -v bzip2 >/dev/null 2>&1; then
-          echo "bzip2 is installed: $(bzip2 --version 2>&1 | head -1)"
-        else
-          echo "ERROR: bzip2 not installed"
-          exit 1
-        fi
+    #     # Проверяем установку bzip2 отдельно
+    #     if command -v bzip2 >/dev/null 2>&1; then
+    #       echo "bzip2 is installed: $(bzip2 --version 2>&1 | head -1)"
+    #     else
+    #       echo "ERROR: bzip2 not installed"
+    #       exit 1
+    #     fi
 
-        if ! command -v dos2unix >/dev/null 2>&1; then
-          echo "Installing dos2unix..."
-          sudo apt-get update && sudo apt-get install -y dos2unix
-        fi
-      register: package_install
-      changed_when: false
-      become: yes
+    #     if ! command -v dos2unix >/dev/null 2>&1; then
+    #       echo "Installing dos2unix..."
+    #       sudo apt-get update && sudo apt-get install -y dos2unix
+    #     fi
+    #   register: package_install
+    #   changed_when: false
+    #   become: yes
 
-    # 5. КОПИРОВАНИЕ АРХИВА НА ВСЕ ХОСТЫ
-    - name: Copy archive to all hosts
-      shell: |
-        # Получаем пароль для текущего хоста из списка
-        CURRENT_HOST="{{ item }}"
-        CURRENT_USER="{{ hostvars[item]['ansible_user'] }}"
-        CURRENT_PASSWORD="{{ hostvars[item]['ansible_password'] }}"
+    # # 5. КОПИРОВАНИЕ АРХИВА НА ВСЕ ХОСТЫ
+    # - name: Copy archive to all hosts
+    #   shell: |
+    #     # Получаем пароль для текущего хоста из списка
+    #     CURRENT_HOST="{{ item }}"
+    #     CURRENT_USER="{{ hostvars[item]['ansible_user'] }}"
+    #     CURRENT_PASSWORD="{{ hostvars[item]['ansible_password'] }}"
         
-        echo "Copying to $CURRENT_HOST..."
+    #     echo "Copying to $CURRENT_HOST..."
         
-        # Копируем через scp
-        sshpass -p "$CURRENT_PASSWORD" scp -o ConnectTimeout=60 -o StrictHostKeyChecking=no \
-          "{{ archive_src }}" \
-          $CURRENT_USER@$CURRENT_HOST:"{{ archive_dest }}"
+    #     # Копируем через scp
+    #     sshpass -p "$CURRENT_PASSWORD" scp -o ConnectTimeout=60 -o StrictHostKeyChecking=no \
+    #       "{{ archive_src }}" \
+    #       $CURRENT_USER@$CURRENT_HOST:"{{ archive_dest }}"
         
-        if [ $? -eq 0 ]; then
-          echo "✅ Copied to $CURRENT_HOST"
-          sshpass -p "$CURRENT_PASSWORD" ssh $CURRENT_USER@$CURRENT_HOST "ls -lh {{ archive_dest }}"
-        else
-          echo "❌ Failed to copy to $CURRENT_HOST"
-          exit 1
-        fi
-      loop: "{{ groups['webservers'] }}"
-      delegate_to: localhost
-      run_once: true
-      when: archive_src is defined and archive_src != ""
-      no_log: false
+    #     if [ $? -eq 0 ]; then
+    #       echo "✅ Copied to $CURRENT_HOST"
+    #       sshpass -p "$CURRENT_PASSWORD" ssh $CURRENT_USER@$CURRENT_HOST "ls -lh {{ archive_dest }}"
+    #     else
+    #       echo "❌ Failed to copy to $CURRENT_HOST"
+    #       exit 1
+    #     fi
+    #   loop: "{{ groups['webservers'] }}"
+    #   delegate_to: localhost
+    #   run_once: true
+    #   when: archive_src is defined and archive_src != ""
+    #   no_log: false
 
     # # ИСПРАВЛЕННЫЕ DEBUG ЗАДАЧИ (заменяем command на raw)
     # - name: Debug - check if file exists before deploy
@@ -225,124 +225,124 @@
     #   changed_when: false
     #   become: yes
 
-    # 7. ПРОВЕРКА НАЛИЧИЯ АРХИВА ПЕРЕД РАСПАКОВКОЙ
-    - name: Verify archive exists on target
-      raw: |
-        if [ -f "{{ archive_dest }}" ]; then
-          echo "✅ Archive found: {{ archive_dest }}"
-          ls -lh "{{ archive_dest }}"
-          file "{{ archive_dest }}"
-        else
-          echo "❌ Archive not found: {{ archive_dest }}"
-          echo "Contents of "{{ extract_dir }}":"
-          ls -la "{{ extract_dir }}"/
-          exit 1
-        fi
-      register: archive_check
-      changed_when: false
+    # # 7. ПРОВЕРКА НАЛИЧИЯ АРХИВА ПЕРЕД РАСПАКОВКОЙ
+    # - name: Verify archive exists on target
+    #   raw: |
+    #     if [ -f "{{ archive_dest }}" ]; then
+    #       echo "✅ Archive found: {{ archive_dest }}"
+    #       ls -lh "{{ archive_dest }}"
+    #       file "{{ archive_dest }}"
+    #     else
+    #       echo "❌ Archive not found: {{ archive_dest }}"
+    #       echo "Contents of "{{ extract_dir }}":"
+    #       ls -la "{{ extract_dir }}"/
+    #       exit 1
+    #     fi
+    #   register: archive_check
+    #   changed_when: false
 
-    # 8. РАСПАКОВКА АРХИВА В ПАПКУ С ПОЛНЫМ ИМЕНЕМ
-    - name: Extract archive to folder
-      raw: |
-        cd "{{ extract_dir }}"
+    # # 8. РАСПАКОВКА АРХИВА В ПАПКУ С ПОЛНЫМ ИМЕНЕМ
+    # - name: Extract archive to folder
+    #   raw: |
+    #     cd "{{ extract_dir }}"
         
-        # Получаем имя файла без расширения .tar.bz2
-        ARCHIVE_NAME=$(basename "{{ archive_filename }}" .tar.bz2)
-        EXTRACT_DIR=""{{ extract_dir }}"${ARCHIVE_NAME}"
+    #     # Получаем имя файла без расширения .tar.bz2
+    #     ARCHIVE_NAME=$(basename "{{ archive_filename }}" .tar.bz2)
+    #     EXTRACT_DIR=""{{ extract_dir }}"${ARCHIVE_NAME}"
         
-        echo "=== EXTRACTION INFO ==="
-        echo "Archive: {{ archive_dest }}"
-        echo "Extract to: ${EXTRACT_DIR}"
+    #     echo "=== EXTRACTION INFO ==="
+    #     echo "Archive: {{ archive_dest }}"
+    #     echo "Extract to: ${EXTRACT_DIR}"
         
-        # Создаем папку для распаковки
-        mkdir -p "${EXTRACT_DIR}"
+    #     # Создаем папку для распаковки
+    #     mkdir -p "${EXTRACT_DIR}"
         
-        # Проверяем архив перед распаковкой
-        echo "Checking archive integrity..."
-        bzip2 -t "{{ archive_dest }}" 2>/dev/null
-        if [ $? -eq 0 ]; then
-          echo "✅ Archive integrity check passed"
-        else
-          echo "⚠️  Archive integrity check failed, but continuing..."
-        fi
+    #     # Проверяем архив перед распаковкой
+    #     echo "Checking archive integrity..."
+    #     bzip2 -t "{{ archive_dest }}" 2>/dev/null
+    #     if [ $? -eq 0 ]; then
+    #       echo "✅ Archive integrity check passed"
+    #     else
+    #       echo "⚠️  Archive integrity check failed, but continuing..."
+    #     fi
         
-        # Распаковываем архив в папку
-        echo "Extracting..."
-        tar -xjvf "{{ archive_dest }}" -C "${EXTRACT_DIR}" --strip-components=0 2>/dev/null
+    #     # Распаковываем архив в папку
+    #     echo "Extracting..."
+    #     tar -xjvf "{{ archive_dest }}" -C "${EXTRACT_DIR}" --strip-components=0 2>/dev/null
         
-        EXIT_CODE=$?
-        if [ $EXIT_CODE -eq 0 ]; then
-          echo "✅ Extraction successful"
-          echo "Contents of ${EXTRACT_DIR}:"
-          ls -la "${EXTRACT_DIR}" | head -20
-        else
-          echo "❌ Extraction failed with code: $EXIT_CODE"
-          echo "Trying alternative extraction method..."
-          # Альтернативный метод распаковки
-          cd "${EXTRACT_DIR}"
-          bzip2 -dc "{{ archive_dest }}" | tar -xvf -
-          if [ $? -eq 0 ]; then
-            echo "✅ Alternative extraction successful"
-          else
-            echo "❌ All extraction methods failed"
-            exit 1
-          fi
-        fi
-      register: extract_result
-      changed_when: false
-      become: yes
+    #     EXIT_CODE=$?
+    #     if [ $EXIT_CODE -eq 0 ]; then
+    #       echo "✅ Extraction successful"
+    #       echo "Contents of ${EXTRACT_DIR}:"
+    #       ls -la "${EXTRACT_DIR}" | head -20
+    #     else
+    #       echo "❌ Extraction failed with code: $EXIT_CODE"
+    #       echo "Trying alternative extraction method..."
+    #       # Альтернативный метод распаковки
+    #       cd "${EXTRACT_DIR}"
+    #       bzip2 -dc "{{ archive_dest }}" | tar -xvf -
+    #       if [ $? -eq 0 ]; then
+    #         echo "✅ Alternative extraction successful"
+    #       else
+    #         echo "❌ All extraction methods failed"
+    #         exit 1
+    #       fi
+    #     fi
+    #   register: extract_result
+    #   changed_when: false
+    #   become: yes
 
-    # 13. ПРОВЕРКА РАСПАКОВАННЫХ ФАЙЛОВ
-    - name: List extracted files
-      raw: |
-        ARCHIVE_NAME=$(basename "{{ archive_filename }}" .tar.bz2)
-        EXTRACT_DIR=""{{ extract_dir }}"/${ARCHIVE_NAME}"
+    # # 13. ПРОВЕРКА РАСПАКОВАННЫХ ФАЙЛОВ
+    # - name: List extracted files
+    #   raw: |
+    #     ARCHIVE_NAME=$(basename "{{ archive_filename }}" .tar.bz2)
+    #     EXTRACT_DIR=""{{ extract_dir }}"/${ARCHIVE_NAME}"
         
-        echo "=== Extracted files in ${EXTRACT_DIR} ==="
-        if [ -d "${EXTRACT_DIR}" ]; then
-          find "${EXTRACT_DIR}" -type f | head -20 | while read file; do
-            ls -la "$file"
-          done
-          echo ""
-          echo "Total files: $(find "${EXTRACT_DIR}" -type f | wc -l)"
-        else
-          echo "Directory ${EXTRACT_DIR} not found"
-          echo "Contents of "{{ extract_dir }}":"
-          ls -la "{{ extract_dir }}"/
-        fi
-      register: files_list
-      changed_when: false
-      when: extract_result is succeeded
+    #     echo "=== Extracted files in ${EXTRACT_DIR} ==="
+    #     if [ -d "${EXTRACT_DIR}" ]; then
+    #       find "${EXTRACT_DIR}" -type f | head -20 | while read file; do
+    #         ls -la "$file"
+    #       done
+    #       echo ""
+    #       echo "Total files: $(find "${EXTRACT_DIR}" -type f | wc -l)"
+    #     else
+    #       echo "Directory ${EXTRACT_DIR} not found"
+    #       echo "Contents of "{{ extract_dir }}":"
+    #       ls -la "{{ extract_dir }}"/
+    #     fi
+    #   register: files_list
+    #   changed_when: false
+    #   when: extract_result is succeeded
 
-    - name: Show extracted files
-      debug:
-        var: files_list.stdout_lines
-      when: extract_result is succeeded
+    # - name: Show extracted files
+    #   debug:
+    #     var: files_list.stdout_lines
+    #   when: extract_result is succeeded
 
-    - name: Run installer2.py
-      raw: |
+    # - name: Run installer2.py
+    #   raw: |
         
-        # Переходим в директорию со скриптами
-        cd "{{ archive_filename | replace('.tar.bz2', '') }}"/scripts
+    #     # Переходим в директорию со скриптами
+    #     cd "{{ archive_filename | replace('.tar.bz2', '') }}"/scripts
         
-        # Делаем скрипт исполняемым (на всякий случай)
-        chmod +x "{{ script_name }}"
+    #     # Делаем скрипт исполняемым (на всякий случай)
+    #     chmod +x "{{ script_name }}"
         
-        # Запускаем installer2.py с sudo паролем
-        python3 "{{ script_name }}" "{{ ansible_password }}"
+    #     # Запускаем installer2.py с sudo паролем
+    #     python3 "{{ script_name }}" "{{ ansible_password }}"
         
-        EXIT_CODE=$?
-        echo "Exit code: $EXIT_CODE"
-        echo "Finished at: $(date)"
+    #     EXIT_CODE=$?
+    #     echo "Exit code: $EXIT_CODE"
+    #     echo "Finished at: $(date)"
         
-        if [ $EXIT_CODE -eq 0 ]; then
-          echo "✅ installer2.py executed successfully"
-        else
-          echo "❌ installer2.py failed with exit code: $EXIT_CODE"
-          exit $EXIT_CODE
-        fi
-      register: installer2_run
-      become: yes
-      become_user: root
-      become_method: sudo
-      become_flags: '-S'
+    #     if [ $EXIT_CODE -eq 0 ]; then
+    #       echo "✅ installer2.py executed successfully"
+    #     else
+    #       echo "❌ installer2.py failed with exit code: $EXIT_CODE"
+    #       exit $EXIT_CODE
+    #     fi
+    #   register: installer2_run
+    #   become: yes
+    #   become_user: root
+    #   become_method: sudo
+    #   become_flags: '-S'

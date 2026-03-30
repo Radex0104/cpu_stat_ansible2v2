@@ -41,7 +41,8 @@ MainWindow::MainWindow(QWidget *parent)
     playbookPath = QDir::cleanPath(playbookPath);
     
     // Путь к Python скрипту
-    pythonScriptPath = QCoreApplication::applicationDirPath() + "/../cicd.py";
+    pythonScriptPath = QCoreApplication::applicationDirPath() + "/../src/cicd.py";
+    pythonScriptPathWsl = "/mnt/c/Users/Admin/Desktop/practic/cpu_stat_ansible2v2/src/cicd.py";
     pythonScriptPath = QDir::cleanPath(pythonScriptPath);
     
     qDebug() << "Playbook path:" << playbookPath;
@@ -257,6 +258,7 @@ void MainWindow::fetchPrometheusData()
     QStringList arguments;
     arguments << pythonScriptPath;
     
+    
     connect(pythonProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             this, &MainWindow::onPythonFinished);
     connect(pythonProcess, &QProcess::errorOccurred,
@@ -302,13 +304,9 @@ void MainWindow::onPythonOutput()
     
     QString output = QString::fromUtf8(pythonProcess->readAllStandardOutput());
     if (!output.trimmed().isEmpty()) {
-        // Если скрипт вывел JSON данные, передаем их в графическое окно
-        if (output.trimmed().startsWith("{") && output.trimmed().contains("results")) {
-            graphics->appendOutput("📈 Получены данные для графиков");
-            graphics->onGraphDataReceived(output.trimmed());
-        } else {
-            qDebug() << "Python output:" << output;
-        }
+        // Просто передаем сырые данные в graphics
+        // Вся обработка будет в PrometheusDataProcessor
+        graphics->onGraphDataReceived(output.trimmed());
     }
 }
 

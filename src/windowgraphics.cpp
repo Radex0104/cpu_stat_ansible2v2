@@ -1,7 +1,6 @@
-// windowgraphics.cpp
 #include "windowgraphics.h"
 #include "graphmanager.h"
-#include "graphwidget.h"
+#include "prometheus.h"
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <QFileInfo>
@@ -10,16 +9,21 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QtCharts/QChart>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QDateTimeAxis>
+#include <QtCharts/QValueAxis>
+
+QT_CHARTS_USE_NAMESPACE
 
 WindowGraphics::WindowGraphics(QWidget *parent)
     : QWidget(parent)
     , progressManager(new ProgressManager(this))
     , graphManager(nullptr)
-    , graphWidget(nullptr)
-    , graphWindow(nullptr)
+    , m_chartView(nullptr)
+    , m_graphLayout(nullptr)
 {
     setupUI();
-    setupGraphWidget();
     setAcceptDrops(true);
     
     graphManager = new GraphManager(this);
@@ -38,15 +42,6 @@ WindowGraphics::~WindowGraphics()
     if (graphManager) {
         disconnect(graphManager, nullptr, this, nullptr);
     }
-    
-    // Сначала удаляем виджет с графиками
-    if (graphWindow) {
-        graphWindow->close();
-        delete graphWindow;
-        graphWindow = nullptr;
-    }
-    
-    // graphManager и graphWidget удалятся автоматически как дети this
 }
 
 void WindowGraphics::setupUI()
@@ -94,6 +89,19 @@ void WindowGraphics::setupUI()
     hostsLayout->addLayout(hostsControlLayout);
     hostsLayout->addWidget(hostsListWidget);
     mainLayout->addWidget(hostsGroup);
+
+    // Группа для графиков
+    QGroupBox *graphGroup = new QGroupBox("Графики времени ответа");
+    m_graphLayout = new QVBoxLayout(graphGroup);
+    
+    // Создаем QChartView для отображения графиков
+    m_chartView = new QChartView(this);
+    m_chartView->setRenderHint(QPainter::Antialiasing);
+    m_chartView->setRubberBand(QChartView::RectangleRubberBand);
+    m_chartView->setMinimumHeight(300);
+    m_graphLayout->addWidget(m_chartView);
+    
+    mainLayout->addWidget(graphGroup);
 
     QGroupBox *progressGroup = new QGroupBox("Прогресс выполнения");
     QVBoxLayout *progressLayout = new QVBoxLayout(progressGroup);
@@ -150,36 +158,122 @@ void WindowGraphics::setupUI()
     mainLayout->addWidget(statusBar);
 }
 
-void WindowGraphics::setupGraphWidget()
+void WindowGraphics::onGraphDataReceived(const QString& jsonData)
 {
-    graphWindow = new QWidget();
-    graphWindow->setWindowTitle("Графики времени ответа");
-    graphWindow->resize(1200, 800);
+    qDebug() << "Received data from Prometheus";
     
-    QVBoxLayout *graphLayout = new QVBoxLayout(graphWindow);
+    if (!graphManager) {
+        appendOutput("⚠️ GraphManager не инициализирован");
+        return;
+    }
     
-    graphWidget = new GraphWidget(graphWindow);
-    graphLayout->addWidget(graphWidget);
+    // Создаем обработчик Prometheus
+    PrometheusProcessor processor;
     
-    graphWidget->setXAxisLabel("Время");
-    graphWidget->setYAxisLabel("Время ответа (мс)");
-    graphWidget->setDateTimeFormat("hh:mm:ss");
-    graphWidget->setGridVisible(true);
-    graphWidget->setLegendVisible(true);
+    // Подключаем сигналы для отладки
+    connect(&processor, &PrometheusProcessor::errorOccurred, this, [this](const QString& error) {
+        appendOutput("⚠️ " + error);
+    });
     
-    graphWindow->hide();
+    connect(&processor, &PrometheusProcessor::processingFinished, this, [this](int count) {
+        appendOutput(QString("✅ Обработано %1 метрик").arg(count));
+    });
+    
+    // Обрабатываем данные
+    bool success = processor.processJsonData(jsonData, graphManager);
+    
+    if (!success) {
+        appendOutput("⚠️ Ошибка обработки данных Prometheus");
+    }
+}
+
+void WindowGraphics::plotGraphs(const QVector<GraphSeries>& series)
+{
+    if (!m_chartView) {
+        qDebug() << "m_chartView is null";
+        return;
+    }
+    
+    if (series.isEmpty()) {
+        appendOutput("⚠️ Нет данных для отображения");
+        return;
+    }
+    
+    // Создаем новый chart
+    QChart *chart = new QChart();
+    chart->setTitle("");
+    chart->setAnimationOptions(QChart::SeriesAnimations);
+    chart->setTheme(QChart::ChartThemeLight);
+    
+    // Создаем оси
+    QDateTimeAxis *axisX = new QDateTimeAxis();
+    axisX->setFormat("hh:mm:ss");
+    axisX->setTitleText("Время");
+    axisX->setGridLineVisible(true);
+    
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setTitleText("Время ответа (мс)");
+    axisY->setGridLineVisible(true);
+    axisY->setLabelFormat("%.2f");
+    
+    chart->addAxis(axisX, Qt::AlignBottom);
+    chart->addAxis(axisY, Qt::AlignLeft);
+    
+    // Добавляем серии
+    for (const GraphSeries& s : series) {
+        QLineSeries *lineSeries = new QLineSeries();
+        lineSeries->setName(s.name);
+        
+        for (const QPointF& point : s.points) {
+            lineSeries->append(static_cast<qint64>(point.x()), point.y());
+        }
+        
+        QPen pen(s.color);
+        pen.setWidth(2);
+        lineSeries->setPen(pen);
+        lineSeries->setPointsVisible(true);
+        
+        chart->addSeries(lineSeries);
+        lineSeries->attachAxis(axisX);
+        lineSeries->attachAxis(axisY);
+    }
+    
+    // Настройка легенды
+    chart->legend()->setVisible(true);
+    chart->legend()->setBackgroundVisible(true);
+    chart->legend()->setBrush(QBrush(QColor(255, 255, 255, 200)));
+    chart->legend()->setBorderColor(Qt::gray);
+    
+    // Обновляем chart view
+    m_chartView->setChart(chart);
+}
+
+void WindowGraphics::onGraphDataUpdated()
+{
+    if (!graphManager) {
+        return;
+    }
+    
+    // Получаем данные для отображения
+    QVector<GraphSeries> series = graphManager->getGraphSeries();
+    
+    if (series.isEmpty()) {
+        appendOutput("⚠️ Нет данных для отображения");
+        if (m_chartView) {
+            m_chartView->setChart(new QChart());
+        }
+        return;
+    }
+    
+    // Отрисовываем графики
+    plotGraphs(series);
+    
+    appendOutput(QString("✅ Загружено %1 графиков").arg(series.size()));
 }
 
 void WindowGraphics::processGraphData(const QString& jsonData)
 {
-    if (!graphManager) {
-        appendOutput("Ошибка: менеджер графиков не инициализирован");
-        return;
-    }
-    
-    if (!graphManager->processPrometheusData(jsonData)) {
-        appendOutput("Ошибка обработки данных для графиков");
-    }
+    onGraphDataReceived(jsonData);
 }
 
 void WindowGraphics::clearGraphs()
@@ -187,26 +281,30 @@ void WindowGraphics::clearGraphs()
     if (graphManager) {
         graphManager->clearAllGraphs();
     }
-    if (graphWidget) {
-        graphWidget->clear();
+    
+    // Очищаем chart
+    if (m_chartView) {
+        m_chartView->setChart(new QChart());
     }
+    
+    appendOutput("🗑️ Графики очищены");
 }
 
 void WindowGraphics::exportGraphs(const QString& filePath)
 {
     if (graphManager && graphManager->exportToJson(filePath)) {
-        appendOutput(QString("Графики экспортированы в %1").arg(filePath));
+        appendOutput(QString("💾 Графики экспортированы в %1").arg(filePath));
     } else {
-        appendOutput(QString("Ошибка экспорта графиков в %1").arg(filePath));
+        appendOutput(QString("⚠️ Ошибка экспорта графиков в %1").arg(filePath));
     }
 }
 
 void WindowGraphics::importGraphs(const QString& filePath)
 {
     if (graphManager && graphManager->importFromJson(filePath)) {
-        appendOutput(QString("Графики импортированы из %1").arg(filePath));
+        appendOutput(QString("📂 Графики импортированы из %1").arg(filePath));
     } else {
-        appendOutput(QString("Ошибка импорта графиков из %1").arg(filePath));
+        appendOutput(QString("⚠️ Ошибка импорта графиков из %1").arg(filePath));
     }
 }
 
@@ -214,77 +312,59 @@ void WindowGraphics::setGraphOpacity(double opacity)
 {
     if (graphManager) {
         graphManager->setGlobalOpacity(opacity);
-    }
-}
-
-void WindowGraphics::onGraphDataReceived(const QString& dataJson)
-{
-    processGraphData(dataJson);
-}
-
-void WindowGraphics::onGraphDataUpdated()
-{
-    if (!graphManager || !graphWidget) {
-        return;
-    }
-    
-    QVector<GraphData> graphs = graphManager->getAllGraphs();
-    
-    if (!graphs.isEmpty()) {
-        graphWidget->plotGraphs(graphs);
-        
-        if (graphWindow && !graphWindow->isVisible()) {
-            graphWindow->show();
-        } else if (graphWindow) {
-            graphWindow->raise();
-            graphWindow->activateWindow();
-        }
-        
-        appendOutput(QString("Построено %1 графиков").arg(graphs.size()));
-    } else {
-        if (graphWidget) {
-            graphWidget->clear();
-        }
-        if (graphWindow && graphWindow->isVisible()) {
-            graphWindow->hide();
-        }
+        appendOutput(QString("🎨 Прозрачность графиков установлена: %1%").arg(opacity * 100));
     }
 }
 
 void WindowGraphics::updatePlayButtonState()
 {
-    playButton->setEnabled(hostsListWidget->count() > 0);
+    if (playButton) {
+        playButton->setEnabled(hostsListWidget && hostsListWidget->count() > 0);
+    }
 }
 
 void WindowGraphics::updateFilePathLabel(const QString& text, bool success)
 {
-    filePathLabel->setText(text);
-    filePathLabel->setStyleSheet(success ?
-        "QLabel { color: green; font-size: 10pt; }" :
-        "QLabel { color: red; font-size: 10pt; }");
+    if (filePathLabel) {
+        filePathLabel->setText(text);
+        filePathLabel->setStyleSheet(success ?
+            "QLabel { color: green; font-size: 10pt; }" :
+            "QLabel { color: red; font-size: 10pt; }");
+    }
 }
 
 void WindowGraphics::appendOutput(const QString& text)
 {
-    outputTextEdit->append(text);
+    if (outputTextEdit) {
+        outputTextEdit->append(text);
+    }
 }
 
 void WindowGraphics::appendStatusBar(const QString& text)
 {
-    statusBar->showMessage(text);
+    if (statusBar) {
+        statusBar->showMessage(text);
+    }
 }
 
 void WindowGraphics::clearOutput()
 {
-    outputTextEdit->clear();
+    if (outputTextEdit) {
+        outputTextEdit->clear();
+    }
 }
 
 void WindowGraphics::addHostToList(const QString& hostInfo)
 {
-    hostsListWidget->addItem(hostInfo);
+    if (hostsListWidget) {
+        hostsListWidget->addItem(hostInfo);
+    }
 }
 
 void WindowGraphics::removeHostFromList(int row)
 {
-    delete hostsListWidget->takeItem(row);
+    if (hostsListWidget && row >= 0 && row < hostsListWidget->count()) {
+        delete hostsListWidget->takeItem(row);
+    }
 }
+

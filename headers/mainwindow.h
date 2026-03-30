@@ -63,6 +63,7 @@ private:
     // Для работы с Python скриптом
     QProcess *pythonProcess;
     QString pythonScriptPath;
+    QString pythonScriptPathWsl;
 
     // Методы для работы с данными из Prometheus
     void fetchPrometheusData();
