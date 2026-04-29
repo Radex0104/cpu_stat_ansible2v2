@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    app.setApplicationName("RPLM installer");
+    app.setApplicationName("ADM");
     app.setOrganizationName("CT-42 Skuratov Daniil");
     app.setApplicationVersion("1.5");
 

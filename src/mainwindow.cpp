@@ -34,7 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
     setupConnections();
 
     setAcceptDrops(true);
-    setWindowTitle("CpuStatCheck");
+    setWindowTitle("AnsibleDeploymentManager");
     resize(600, 500);
 
     playbookPath = QCoreApplication::applicationDirPath() + "/../ansible.yml";
@@ -42,14 +42,17 @@ MainWindow::MainWindow(QWidget *parent)
     
     // Путь к Python скрипту
     pythonScriptPath = QCoreApplication::applicationDirPath() + "/../src/cicd.py";
-    pythonScriptPathWsl = "/mnt/c/Users/Admin/Desktop/practic/cpu_stat_ansible2v2/src/cicd.py";
+    // pythonScriptPathWsl = "/mnt/c/Users/Admin/Desktop/practic/cpu_stat_ansible2v2/src/cicd.py";
     pythonScriptPath = QDir::cleanPath(pythonScriptPath);
     
     qDebug() << "Playbook path:" << playbookPath;
     qDebug() << "Python script path:" << pythonScriptPath;
     
     ansibleRunner->setPlaybookPath(playbookPath);
-
+    QPushButton* showGraphsBtn = graphics->getShowGraphsButton();
+        if (showGraphsBtn && showGraphsBtn->text().contains("Показать")) {
+            showGraphsBtn->click();
+        }
     connect(ansibleRunner, &AnsibleRunner::outputReceived, this, &MainWindow::onAnsibleOutput);
     connect(ansibleRunner, &AnsibleRunner::finished, this, &MainWindow::onAnsibleFinished);
     connect(ansibleRunner, &AnsibleRunner::errorOccurred, this, &MainWindow::onAnsibleError);
@@ -89,8 +92,11 @@ void MainWindow::loadSavedConfiguration()
     QString defaultUser;
     configManager->loadConfiguration(hostsConfig, defaultUser);
 
-    for (const auto& host : hostsConfig) {
-        graphics->addHostToList(host.address + " (" + host.sshUser + "@" + host.address + ")");
+    for (int i = 0; i < hostsConfig.size(); ++i) {
+        const auto& host = hostsConfig[i];
+        QString displayText = host.address + " (" + host.sshUser + "@" + host.address + ")";
+        graphics->addHostToList(displayText);
+        // По умолчанию все хосты включены (чекбокс отмечен)
     }
 }
 
@@ -261,14 +267,8 @@ void MainWindow::fetchPrometheusData()
     
     connect(pythonProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             this, &MainWindow::onPythonFinished);
-    connect(pythonProcess, &QProcess::errorOccurred,
-            this, &MainWindow::onPythonError);
-    connect(pythonProcess, &QProcess::readyReadStandardOutput,
-            this, &MainWindow::onPythonOutput);
-    connect(pythonProcess, &QProcess::readyReadStandardError,
-            this, &MainWindow::onPythonErrorOutput);
     
-    pythonProcess->start("python", arguments);
+    pythonProcess->start("python3", arguments);
     
     // Таймаут 30 секунд
     QTimer::singleShot(30000, this, [this]() {
@@ -293,33 +293,6 @@ void MainWindow::onPythonFinished(int exitCode, QProcess::ExitStatus exitStatus)
     }
 }
 
-void MainWindow::onPythonError(QProcess::ProcessError error)
-{
-    graphics->appendOutput("⚠️ Ошибка запуска Python: " + QString::number(error));
-}
-
-void MainWindow::onPythonOutput()
-{
-    if (!pythonProcess) return;
-    
-    QString output = QString::fromUtf8(pythonProcess->readAllStandardOutput());
-    if (!output.trimmed().isEmpty()) {
-        // Просто передаем сырые данные в graphics
-        // Вся обработка будет в PrometheusDataProcessor
-        graphics->onGraphDataReceived(output.trimmed());
-    }
-}
-
-void MainWindow::onPythonErrorOutput()
-{
-    if (!pythonProcess) return;
-    
-    QString error = QString::fromUtf8(pythonProcess->readAllStandardError());
-    if (!error.trimmed().isEmpty()) {
-        graphics->appendOutput("⚠️ " + error.trimmed());
-    }
-}
-
 void MainWindow::onPlayButtonClicked()
 {
     if (currentArchivePath.isEmpty()) {
@@ -327,9 +300,20 @@ void MainWindow::onPlayButtonClicked()
         return;
     }
 
-    if (hostsConfig.isEmpty()) {
-        showMessage("Не добавлено ни одного хоста", true);
+    // Получаем только выбранные хосты
+    QList<int> selectedIndices = graphics->getSelectedHostIndices();
+    
+    if (selectedIndices.isEmpty()) {
+        showMessage("Не выбран ни один хост для выполнения (отметьте чекбоксы)", true);
         return;
+    }
+
+    // Собираем только выбранные хосты
+    QList<HostConfig> selectedHosts;
+    for (int idx : selectedIndices) {
+        if (idx < hostsConfig.size()) {
+            selectedHosts.append(hostsConfig[idx]);
+        }
     }
 
     QFile playbookFile(playbookPath);
@@ -339,7 +323,8 @@ void MainWindow::onPlayButtonClicked()
     }
 
     graphics->clearOutput();
-    ansibleRunner->setHosts(hostsConfig);
+    graphics->appendOutput(QString("🚀 Запуск на %1 из %2 хостов").arg(selectedHosts.size()).arg(hostsConfig.size()));
+    ansibleRunner->setHosts(selectedHosts);
     ansibleRunner->executePlaybook();
 }
 
@@ -397,9 +382,8 @@ void MainWindow::removeHost()
         graphics->removeHostFromList(row);
         hostsConfig.removeAt(row);
 
-        // Сохраняем текущего пользователя и пароль из полей ввода
+        // Сохраняем конфигурацию
         QString currentUser = graphics->getSshUserEdit()->text();
-        // Пароль не сохраняем отдельно, он уже в hostsConfig
         configManager->saveConfiguration(hostsConfig, currentUser);
 
         graphics->appendOutput("✅ Хост удален: " + removedHost);
@@ -412,10 +396,15 @@ void MainWindow::onAnsibleFinished(bool success, int exitCode)
 {
     if (success) {
         graphics->appendOutput("✅ Ansible выполнен успешно");
+        graphics->appendOutput("📊 Загрузка графиков...");
         
-        // После успешного выполнения Ansible, запускаем получение данных из Prometheus
-        graphics->appendOutput("📊 Запуск получения данных из Prometheus...");
-        fetchPrometheusData();
+        // Правильный поиск кнопки
+        QPushButton* showGraphsBtn = graphics->getShowGraphsButton();
+        if (showGraphsBtn && showGraphsBtn->text().contains("Показать")) {
+            showGraphsBtn->click();
+        }
+        
+        graphics->appendOutput("✅ Графики загружены");
     } else {
         graphics->appendOutput("❌ Ошибка выполнения Ansible (код: " + QString::number(exitCode) + ")");
     }

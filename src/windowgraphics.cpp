@@ -1,6 +1,5 @@
 #include "windowgraphics.h"
 #include "graphmanager.h"
-#include "prometheus.h"
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <QFileInfo>
@@ -14,34 +13,28 @@
 #include <QtCharts/QDateTimeAxis>
 #include <QtCharts/QValueAxis>
 
+#include <QCheckBox>
+
 QT_CHARTS_USE_NAMESPACE
 
 WindowGraphics::WindowGraphics(QWidget *parent)
     : QWidget(parent)
     , progressManager(new ProgressManager(this))
-    , graphManager(nullptr)
+    , graphManager(new GraphManager(this))
+    , m_graphManager(new GraphManager(this))
     , m_chartView(nullptr)
     , m_graphLayout(nullptr)
+    , m_tabWidget(nullptr)
+    , m_graphsVisible(false)
 {
     setupUI();
     setAcceptDrops(true);
-    
-    graphManager = new GraphManager(this);
-    
-    connect(graphManager, &GraphManager::graphDataUpdated, 
-            this, &WindowGraphics::onGraphDataUpdated);
-    connect(graphManager, &GraphManager::errorOccurred,
-            this, &WindowGraphics::appendOutput);
-    
     progressManager->setProgressBar(progressBar);
 }
 
 WindowGraphics::~WindowGraphics()
 {
     // Сначала отключаем сигналы
-    if (graphManager) {
-        disconnect(graphManager, nullptr, this, nullptr);
-    }
 }
 
 void WindowGraphics::setupUI()
@@ -90,19 +83,74 @@ void WindowGraphics::setupUI()
     hostsLayout->addWidget(hostsListWidget);
     mainLayout->addWidget(hostsGroup);
 
-    // Группа для графиков
-    QGroupBox *graphGroup = new QGroupBox("Графики времени ответа");
-    m_graphLayout = new QVBoxLayout(graphGroup);
-    
-    // Создаем QChartView для отображения графиков
-    m_chartView = new QChartView(this);
-    m_chartView->setRenderHint(QPainter::Antialiasing);
-    m_chartView->setRubberBand(QChartView::RectangleRubberBand);
-    m_chartView->setMinimumHeight(300);
-    m_graphLayout->addWidget(m_chartView);
-    
-    mainLayout->addWidget(graphGroup);
+    // Кнопка показа/скрытия графиков
+    QHBoxLayout* graphControlLayout = new QHBoxLayout();
+    showGraphsButton = new QPushButton("▼ Показать графики");
+    showGraphsButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #2196F3;"
+        "    color: white;"
+        "    padding: 8px;"
+        "    font-size: 12pt;"
+        "    border: none;"
+        "    border-radius: 5px;"
+        "    text-align: left;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #1976D2;"
+        "}"
+    );
 
+    connect(showGraphsButton, &QPushButton::clicked, this, &WindowGraphics::onShowGraphsClicked);
+    graphControlLayout->addWidget(showGraphsButton);
+    
+    // Кнопка обновления всех графиков (изначально скрыта)
+    refreshAllGraphsButton = new QPushButton("Обновить все графики");
+    refreshAllGraphsButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #4CAF50;"
+        "    color: white;"
+        "    padding: 8px;"
+        "    font-size: 12pt;"
+        "    border: none;"
+        "    border-radius: 5px;"
+        "    margin-left: 10px;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #45a049;"
+        "}"
+    );
+    refreshAllGraphsButton->setVisible(false);
+    connect(refreshAllGraphsButton, &QPushButton::clicked, this, &WindowGraphics::onRefreshAllGraphsClicked);
+    graphControlLayout->addWidget(refreshAllGraphsButton);
+    
+    graphControlLayout->addStretch();
+    mainLayout->addLayout(graphControlLayout);
+
+    // Виджет с вкладками для графиков
+    m_tabWidget = new QTabWidget(this);
+    m_tabWidget->setMinimumHeight(400);
+    m_tabWidget->setVisible(false);
+    m_tabWidget->setStyleSheet(
+        "QTabWidget::pane {"
+        "    border: 1px solid #ccc;"
+        "    background: white;"
+        "}"
+        "QTabBar::tab {"
+        "    padding: 8px 16px;"
+        "    margin-right: 2px;"
+        "    background: #f0f0f0;"
+        "}"
+        "QTabBar::tab:selected {"
+        "    background: #2196F3;"
+        "    color: white;"
+        "}"
+    );
+    mainLayout->addWidget(m_tabWidget);  // <-- ВОТ ЭТО БЫЛО ПРОПУЩЕНО!
+
+    // Создаем вкладки с графиками
+    setupGraphTabs();
+    
     QGroupBox *progressGroup = new QGroupBox("Прогресс выполнения");
     QVBoxLayout *progressLayout = new QVBoxLayout(progressGroup);
     
@@ -158,162 +206,88 @@ void WindowGraphics::setupUI()
     mainLayout->addWidget(statusBar);
 }
 
-void WindowGraphics::onGraphDataReceived(const QString& jsonData)
+void WindowGraphics::setupGraphTabs()
 {
-    qDebug() << "Received data from Prometheus";
+    // 1. Общий RPS (одна линия)
+    addGraphTab("RPS (Total)", 
+        "sum(rate(jmeter_requests_total[30s]))");
     
-    if (!graphManager) {
-        appendOutput("⚠️ GraphManager не инициализирован");
-        return;
-    }
+    // 2. RPS по каждому запросу (много линий)
+    addGraphTab("RPS by Endpoint", 
+        "sum(rate(jmeter_requests_total[30s])) by (label)");
     
-    // Создаем обработчик Prometheus
-    PrometheusProcessor processor;
-    
-    // Подключаем сигналы для отладки
-    connect(&processor, &PrometheusProcessor::errorOccurred, this, [this](const QString& error) {
-        appendOutput("⚠️ " + error);
-    });
-    
-    connect(&processor, &PrometheusProcessor::processingFinished, this, [this](int count) {
-        appendOutput(QString("✅ Обработано %1 метрик").arg(count));
-    });
-    
-    // Обрабатываем данные
-    bool success = processor.processJsonData(jsonData, graphManager);
-    
-    if (!success) {
-        appendOutput("⚠️ Ошибка обработки данных Prometheus");
-    }
+    // 3. Среднее время ответа по каждому запросу
+    addGraphTab("Avg Response Time", 
+        "avg(jmeter_rt_summary) by (label)");
 }
 
-void WindowGraphics::plotGraphs(const QVector<GraphSeries>& series)
+void WindowGraphics::addGraphTab(const QString& title, const QString& prometheusQuery)
 {
-    if (!m_chartView) {
-        qDebug() << "m_chartView is null";
-        return;
-    }
+    QWidget* tabWidget = new QWidget();
+    QVBoxLayout* tabLayout = new QVBoxLayout(tabWidget);
+    tabLayout->setContentsMargins(0, 0, 0, 0);
     
-    if (series.isEmpty()) {
-        appendOutput("⚠️ Нет данных для отображения");
-        return;
-    }
+    // Используем ZoomableChartView (с поддержкой резинки и колесика)
+    ZoomableChartView* chartView = new ZoomableChartView();
+    chartView->setRenderHint(QPainter::Antialiasing);
     
-    // Создаем новый chart
-    QChart *chart = new QChart();
-    chart->setTitle("");
-    chart->setAnimationOptions(QChart::SeriesAnimations);
-    chart->setTheme(QChart::ChartThemeLight);
+    // Сохраняем query
+    chartView->setProperty("query", prometheusQuery);
     
-    // Создаем оси
-    QDateTimeAxis *axisX = new QDateTimeAxis();
-    axisX->setFormat("hh:mm:ss");
-    axisX->setTitleText("Время");
-    axisX->setGridLineVisible(true);
+    tabLayout->addWidget(chartView);
+    m_tabWidget->addTab(tabWidget, title);
+}
+
+void WindowGraphics::onShowGraphsClicked()
+{
+    m_graphsVisible = !m_graphsVisible;
     
-    QValueAxis *axisY = new QValueAxis();
-    axisY->setTitleText("Время ответа (мс)");
-    axisY->setGridLineVisible(true);
-    axisY->setLabelFormat("%.2f");
-    
-    chart->addAxis(axisX, Qt::AlignBottom);
-    chart->addAxis(axisY, Qt::AlignLeft);
-    
-    // Добавляем серии
-    for (const GraphSeries& s : series) {
-        QLineSeries *lineSeries = new QLineSeries();
-        lineSeries->setName(s.name);
+    if (m_graphsVisible) {
+        m_tabWidget->setVisible(true);
+        showGraphsButton->setText("▲ Скрыть графики");
+        refreshAllGraphsButton->setVisible(true);
         
-        for (const QPointF& point : s.points) {
-            lineSeries->append(static_cast<qint64>(point.x()), point.y());
+        // Используем m_graphManager
+        for (int i = 0; i < m_tabWidget->count(); ++i) {
+            QWidget* tab = m_tabWidget->widget(i);
+            QChartView* chartView = tab->findChild<QChartView*>();
+            
+            if (chartView && !chartView->chart() && m_graphManager) {
+                QString query = chartView->property("query").toString();
+                m_graphManager->buildPrometheusChart(chartView, query);
+            }
         }
-        
-        QPen pen(s.color);
-        pen.setWidth(2);
-        lineSeries->setPen(pen);
-        lineSeries->setPointsVisible(true);
-        
-        chart->addSeries(lineSeries);
-        lineSeries->attachAxis(axisX);
-        lineSeries->attachAxis(axisY);
+    } else {
+        m_tabWidget->setVisible(false);
+        showGraphsButton->setText("▼ Показать графики");
+        refreshAllGraphsButton->setVisible(false);
     }
-    
-    // Настройка легенды
-    chart->legend()->setVisible(true);
-    chart->legend()->setBackgroundVisible(true);
-    chart->legend()->setBrush(QBrush(QColor(255, 255, 255, 200)));
-    chart->legend()->setBorderColor(Qt::gray);
-    
-    // Обновляем chart view
-    m_chartView->setChart(chart);
 }
 
-void WindowGraphics::onGraphDataUpdated()
+void WindowGraphics::onRefreshAllGraphsClicked()
 {
-    if (!graphManager) {
+    qDebug() << "Refreshing all graphs...";
+    
+    if (!m_graphManager) {
+        qDebug() << "GraphManager is null!";
         return;
     }
     
-    // Получаем данные для отображения
-    QVector<GraphSeries> series = graphManager->getGraphSeries();
+    // Обновляем оси Y
+    m_graphManager->forceUpdateYAxis();
     
-    if (series.isEmpty()) {
-        appendOutput("⚠️ Нет данных для отображения");
-        if (m_chartView) {
-            m_chartView->setChart(new QChart());
+    // Перестраиваем графики
+    for (int i = 0; i < m_tabWidget->count(); ++i) {
+        QWidget* tab = m_tabWidget->widget(i);
+        QChartView* chartView = tab->findChild<QChartView*>();
+        
+        if (chartView) {
+            QString query = chartView->property("query").toString();
+            m_graphManager->buildPrometheusChart(chartView, query);
         }
-        return;
     }
     
-    // Отрисовываем графики
-    plotGraphs(series);
-    
-    appendOutput(QString("✅ Загружено %1 графиков").arg(series.size()));
-}
-
-void WindowGraphics::processGraphData(const QString& jsonData)
-{
-    onGraphDataReceived(jsonData);
-}
-
-void WindowGraphics::clearGraphs()
-{
-    if (graphManager) {
-        graphManager->clearAllGraphs();
-    }
-    
-    // Очищаем chart
-    if (m_chartView) {
-        m_chartView->setChart(new QChart());
-    }
-    
-    appendOutput("🗑️ Графики очищены");
-}
-
-void WindowGraphics::exportGraphs(const QString& filePath)
-{
-    if (graphManager && graphManager->exportToJson(filePath)) {
-        appendOutput(QString("💾 Графики экспортированы в %1").arg(filePath));
-    } else {
-        appendOutput(QString("⚠️ Ошибка экспорта графиков в %1").arg(filePath));
-    }
-}
-
-void WindowGraphics::importGraphs(const QString& filePath)
-{
-    if (graphManager && graphManager->importFromJson(filePath)) {
-        appendOutput(QString("📂 Графики импортированы из %1").arg(filePath));
-    } else {
-        appendOutput(QString("⚠️ Ошибка импорта графиков из %1").arg(filePath));
-    }
-}
-
-void WindowGraphics::setGraphOpacity(double opacity)
-{
-    if (graphManager) {
-        graphManager->setGlobalOpacity(opacity);
-        appendOutput(QString("🎨 Прозрачность графиков установлена: %1%").arg(opacity * 100));
-    }
+    appendOutput("📊 Графики обновлены");
 }
 
 void WindowGraphics::updatePlayButtonState()
@@ -357,7 +331,7 @@ void WindowGraphics::clearOutput()
 void WindowGraphics::addHostToList(const QString& hostInfo)
 {
     if (hostsListWidget) {
-        hostsListWidget->addItem(hostInfo);
+        createHostListItem(hostInfo, true);
     }
 }
 
@@ -368,3 +342,86 @@ void WindowGraphics::removeHostFromList(int row)
     }
 }
 
+QListWidgetItem* WindowGraphics::createHostListItem(const QString& hostInfo, bool checked)
+{
+    QListWidgetItem* item = new QListWidgetItem(hostsListWidget);
+    
+    QWidget* widget = new QWidget();
+    QHBoxLayout* layout = new QHBoxLayout(widget);
+    layout->setContentsMargins(5, 2, 5, 2);
+    layout->setSpacing(10);
+    
+    QCheckBox* checkBox = new QCheckBox();
+    checkBox->setChecked(checked);
+    checkBox->setProperty("hostIndex", hostsListWidget->count());
+    
+    QLabel* label = new QLabel(hostInfo);
+    label->setStyleSheet("QLabel { font-size: 10pt; }");
+    
+    layout->addWidget(checkBox);
+    layout->addWidget(label);
+    layout->addStretch();
+    
+    widget->setLayout(layout);
+    item->setSizeHint(widget->sizeHint());
+    
+    hostsListWidget->addItem(item);
+    hostsListWidget->setItemWidget(item, widget);
+    
+    return item;
+}
+
+QList<int> WindowGraphics::getSelectedHostIndices() const
+{
+    QList<int> selectedIndices;
+    for (int i = 0; i < hostsListWidget->count(); ++i) {
+        if (isHostChecked(i)) {
+            selectedIndices.append(i);
+        }
+    }
+    return selectedIndices;
+}
+
+WindowGraphics::HostListItem WindowGraphics::getHostListItem(int index) const
+{
+    HostListItem result;
+    result.isChecked = false;
+    result.displayText = "";
+    
+    if (index >= 0 && index < hostsListWidget->count()) {
+        QListWidgetItem* item = hostsListWidget->item(index);
+        QWidget* widget = hostsListWidget->itemWidget(item);
+        if (widget) {
+            QCheckBox* checkBox = widget->findChild<QCheckBox*>();
+            QLabel* label = widget->findChild<QLabel*>();
+            if (checkBox) result.isChecked = checkBox->isChecked();
+            if (label) result.displayText = label->text();
+        }
+    }
+    return result;
+}
+
+void WindowGraphics::setHostChecked(int index, bool checked)
+{
+    if (index >= 0 && index < hostsListWidget->count()) {
+        QListWidgetItem* item = hostsListWidget->item(index);
+        QWidget* widget = hostsListWidget->itemWidget(item);
+        if (widget) {
+            QCheckBox* checkBox = widget->findChild<QCheckBox*>();
+            if (checkBox) checkBox->setChecked(checked);
+        }
+    }
+}
+
+bool WindowGraphics::isHostChecked(int index) const
+{
+    if (index >= 0 && index < hostsListWidget->count()) {
+        QListWidgetItem* item = hostsListWidget->item(index);
+        QWidget* widget = hostsListWidget->itemWidget(item);
+        if (widget) {
+            QCheckBox* checkBox = widget->findChild<QCheckBox*>();
+            if (checkBox) return checkBox->isChecked();
+        }
+    }
+    return false;
+}

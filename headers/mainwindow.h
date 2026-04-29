@@ -39,15 +39,11 @@ private slots:
     void onWslSetupFinished(bool success);
 
     void onPythonFinished(int exitCode, QProcess::ExitStatus exitStatus);
-    void onPythonError(QProcess::ProcessError error);
-    void onPythonOutput();
-    void onPythonErrorOutput();
     
 private:
     void setupConnections();
     void loadSavedConfiguration();
     void setArchivePath(const QString& path);
-    void updatePlayButtonState();
     void checkWSLAndShowStatus();
     void showMessage(const QString &message, bool isError = false);
     bool wslCheckPerformed = false;

@@ -80,12 +80,11 @@ void AnsibleRunner::createInventoryFile()
 
             stream << host.address;
             stream << " ansible_user=" << host.sshUser;
-
-            if (!host.sshPass.isEmpty()) {
-                stream << " ansible_ssh_pass=" << host.sshPass;
-                stream << " ansible_password=" << host.sshPass;
-            }
-
+            stream << " ansible_ssh_pass=" << host.sshPass;
+            stream << " ansible_password=" << host.sshPass;
+            stream << " ansible_become_pass=" << host.sshPass;
+            stream << " ansible_sudo_pass=" << host.sshPass;
+            stream << " extract_dir=/home/" << host.sshUser;
             stream << " ansible_connection=ssh";
             stream << " ansible_port=22";
             stream << " ansible_ssh_extra_args='-o PubkeyAuthentication=no -o PasswordAuthentication=yes'";
@@ -94,14 +93,11 @@ void AnsibleRunner::createInventoryFile()
 
         stream << "\n[webservers:vars]\n";
         stream << "ansible_ssh_common_args='-o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o PasswordAuthentication=yes'\n";
-
-        if (!hostsConfig.isEmpty() && !hostsConfig[0].sshPass.isEmpty()) {
-            stream << "ansible_become_pass=" << hostsConfig[0].sshPass << "\n";
-            stream << "ansible_sudo_pass=" << hostsConfig[0].sshPass << "\n";
-        }
+        stream << "ansible_become=yes\n";
+        stream << "ansible_become_method=sudo\n";
 
         file.close();
-        emit outputReceived("📄 Inventory файл создан");
+        emit outputReceived("📄 Inventory файл создан для " + QString::number(hostsConfig.size()) + " хостов");
     } else {
         emit errorOccurred("Не удалось создать inventory файл");
     }
@@ -151,6 +147,7 @@ void AnsibleRunner::executePlaybook()
 
     emit outputReceived("🚀 Запуск Ansible playbook...");
     emit outputReceived("📋 Используется playbook: " + playbookPath);
+    emit outputReceived(QString("📊 Количество хостов в запуске: %1").arg(hostsConfig.size()));
 
     // Сброс индекса задачи
     m_currentTaskIndex = 0;
