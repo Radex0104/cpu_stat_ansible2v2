@@ -11,6 +11,12 @@ AnsibleRunner::AnsibleRunner(QObject *parent)
     , ansibleProcess(nullptr)
     , m_progressManager(nullptr)
     , m_currentTaskIndex(0)
+    , jmeterHost("")
+    , jmeterArchiveSrc("")
+    , jmeterRemoteTestDir("/opt/jmeter_tests")
+    , jmeterResultsRemoteDir("/tmp/jmeter_results")
+    , jmeterResultsLocalDir("./jmeter_results")
+    , jmeterTestDuration(300)  // <-- ДОБАВЬТЕ ЭТУ СТРОКУ
 {
     ansibleProcess = new QProcess(this);
 
@@ -70,14 +76,14 @@ void AnsibleRunner::setHosts(const QList<HostConfig>& hosts)
 void AnsibleRunner::createInventoryFile()
 {
     QFile file(inventoryPath);
-
+    
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream stream(&file);
         stream << "[webservers]\n";
-
+        
         for (int i = 0; i < hostsConfig.size(); ++i) {
             const HostConfig &host = hostsConfig[i];
-
+            
             stream << host.address;
             stream << " ansible_user=" << host.sshUser;
             stream << " ansible_ssh_pass=" << host.sshPass;
@@ -90,56 +96,41 @@ void AnsibleRunner::createInventoryFile()
             stream << " ansible_ssh_extra_args='-o PubkeyAuthentication=no -o PasswordAuthentication=yes'";
             stream << "\n";
         }
-
+        
         stream << "\n[webservers:vars]\n";
         stream << "ansible_ssh_common_args='-o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o PasswordAuthentication=yes'\n";
         stream << "ansible_become=yes\n";
         stream << "ansible_become_method=sudo\n";
-
+        
+        // ВАЖНО: Добавляем JMeter host в inventory
+        if (!jmeterHost.isEmpty()) {
+            stream << "jmeter_host=" << jmeterHost << "\n";
+            qDebug() << "JMeter host set to:" << jmeterHost;
+        } else {
+            qDebug() << "WARNING: JMeter host is empty!";
+        }
+        
+        // Добавляем другие переменные JMeter
+        if (!jmeterArchiveSrc.isEmpty()) {
+            stream << "jmeter_archive_src=" << jmeterArchiveSrc << "\n";
+        }
+        if (!jmeterRemoteTestDir.isEmpty()) {
+            stream << "jmeter_remote_test_dir=" << jmeterRemoteTestDir << "\n";
+        }
+        if (!jmeterResultsRemoteDir.isEmpty()) {
+            stream << "jmeter_results_remote_dir=" << jmeterResultsRemoteDir << "\n";
+        }
+        if (jmeterTestDuration > 0) {
+            stream << "jmeter_test_duration=" << jmeterTestDuration << "\n";
+        }
+        
         file.close();
         emit outputReceived("📄 Inventory файл создан для " + QString::number(hostsConfig.size()) + " хостов");
+        emit outputReceived("📍 JMeter host: " + (jmeterHost.isEmpty() ? "не задан" : jmeterHost));
     } else {
         emit errorOccurred("Не удалось создать inventory файл");
     }
 }
-
-// bool AnsibleRunner::updateScriptPathInPlaybook(const QString& playbookPath, const QString& scriptPath)
-// {
-//     if (scriptPath.isEmpty()) return false;
-
-//     QFile playbookFile(playbookPath);
-//     qDebug() << playbookPath;
-//     if (!playbookFile.exists()) {
-//         emit errorOccurred("Файл ansible.yml не найден в папке проекта!");
-//         return false;
-//     }
-
-//     if (!playbookFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-//         emit errorOccurred("Не удалось прочитать файл ansible.yml");
-//         return false;
-//     }
-
-//     QString content = QString::fromUtf8(playbookFile.readAll());
-//     playbookFile.close();
-
-//     QString wslScriptPath = convertToWslPath(scriptPath);
-//     qDebug() << wslScriptPath;
-//     QStringList lines = content.split("\n");
-//     for (int i = 0; i < lines.size(); ++i) {
-//         if (lines[i].contains("script_src:")) {
-//             lines[i] = QString("    script_src: \"%1\"").arg(wslScriptPath);
-//             break;
-//         }
-//     }
-
-//     if (playbookFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
-//         playbookFile.write(lines.join("\n").toUtf8());
-//         playbookFile.close();
-//         return true;
-//     }
-
-//     return false;
-// }
 
 void AnsibleRunner::executePlaybook()
 {
@@ -161,7 +152,42 @@ void AnsibleRunner::executePlaybook()
     QStringList arguments;
     arguments << "-i" << convertToWslPath(inventoryPath);
     arguments << convertToWslPath(playbookPath);
-    // arguments << "-v"; // Для более детального вывода
+    
+    // ========== ДОБАВЬТЕ ЭТОТ БЛОК ==========
+    // Передаем JMeter переменные через extra-vars
+    QMap<QString, QString> extraVars;
+    
+    // Берем значения из переменных класса (которые должны быть установлены из настроек)
+    if (!jmeterHost.isEmpty()) {
+        extraVars["jmeter_host"] = jmeterHost;
+        qDebug() << "Setting jmeter_host:" << jmeterHost;
+    }
+    if (!jmeterArchiveSrc.isEmpty()) {
+        extraVars["jmeter_archive_src"] = convertToWslPath(jmeterArchiveSrc);
+        qDebug() << "Setting jmeter_archive_src:" << jmeterArchiveSrc;
+    }
+    if (!jmeterRemoteTestDir.isEmpty()) {
+        extraVars["jmeter_remote_test_dir"] = jmeterRemoteTestDir;
+        qDebug() << "Setting jmeter_remote_test_dir:" << jmeterRemoteTestDir;
+    }
+    if (!jmeterResultsRemoteDir.isEmpty()) {
+        extraVars["jmeter_results_remote_dir"] = jmeterResultsRemoteDir;
+        qDebug() << "Setting jmeter_results_remote_dir:" << jmeterResultsRemoteDir;
+    }
+    if (!jmeterResultsLocalDir.isEmpty()) {
+        extraVars["jmeter_results_local_dir"] = jmeterResultsLocalDir;
+        qDebug() << "Setting jmeter_results_local_dir:" << jmeterResultsLocalDir;
+    }
+    if (jmeterTestDuration > 0) {
+        extraVars["test_duration"] = QString::number(jmeterTestDuration);
+        qDebug() << "Setting test_duration:" << jmeterTestDuration;
+    }
+    
+    // Добавляем все переменные в аргументы командной строки
+    for (auto it = extraVars.begin(); it != extraVars.end(); ++it) {
+        arguments << "--extra-vars" << QString("%1=%2").arg(it.key(), it.value());
+    }
+    // ========================================
 
     emit outputReceived("\n⚡ Выполнение playbook...");
     emit outputReceived("Команда: ansible-playbook " + arguments.join(" "));

@@ -4,13 +4,24 @@
   gather_facts: no
   vars:
     script_name: "installer2.py"
+
     archive_src: "/mnt/c/Users/Daniil/Desktop/111/rplm_astra17_2025.4.1.1-VNF_134607.tar.bz2"
+    
+    # Получаем имена файлов из исходных путей
+    
     archive_filename: "{{ archive_src | basename }}"
-    archive_dest: "{{ extract_dir }}/{{ archive_filename }}"
-    result_dir: "{{ extract_dir }}/cpu_stat_results"
+
+    # Пути на целевой машине
+    archive_dest: "/tmp/{{ archive_filename }}"
+    
+    # Директория для распаковки (на одном уровне с архивом)
+    extract_dir: "/tmp"
+    
+    result_dir: "/tmp/cpu_stat_results"
+    
+    # Параметры rsync
     rsync_extra_opts: '--partial --progress --compress --checksum'
     rsync_timeout: 3600
-    host_deployment_success: false
 
   tasks:
     # 0. ДОБАВЛЕНИЕ ХОСТА В KNOWN_HOSTS
@@ -24,245 +35,409 @@
       when: ansible_user is defined
       ignore_errors: yes
 
-    # ОСНОВНОЙ БЛОК ВЫПОЛНЕНИЯ
-    - block:
-        - name: Display start of execution for host
-          debug:
-            msg: "Starting deployment on {{ inventory_hostname }}"
+    # 1. ТЕСТ СОЕДИНЕНИЯ
+    - name: Gather basic host information
+      raw: |
+        echo "=== Host: $(hostname) ==="
+        echo "IP: $(ip route get 1 | awk '{print $NF;exit}')"
+        echo "Date: $(date)"
+        echo "Free disk space on /tmp:"
+        df -h "{{ extract_dir }}"
+        echo "Available memory:"
+        free -m
+      register: host_info
+      changed_when: false
 
-        # 1. ТЕСТ СОЕДИНЕНИЯ
-        - name: Gather basic host information
-          raw: |
-            echo "=== Host: $(hostname) ==="
-            echo "IP: $(ip route get 1 | awk '{print $NF;exit}')"
-            echo "Date: $(date)"
-            echo "Free disk space on {{ extract_dir }}:"
-            df -h "{{ extract_dir }}" 2>/dev/null || echo "Directory {{ extract_dir }} does not exist yet"
-            echo "Available memory:"
-            free -m
-          register: host_info
-          changed_when: false
+    - name: Display host information
+      debug:
+        var: host_info.stdout_lines
 
-        - name: Display host information
-          debug:
-            var: host_info.stdout_lines
+    # 4. ПРОВЕРЯЕМ НАЛИЧИЕ НЕОБХОДИМЫХ ПАКЕТОВ
+    - name: Ensure required packages are installed
+      raw: |
+        missing_pkgs=""
+        for cmd in rsync bzip2 tar; do
+          if ! command -v $cmd >/dev/null 2>&1; then
+            missing_pkgs="$missing_pkgs $cmd"
+          fi
+        done
+        if ! command -v pass >/dev/null 2>&1; then
+          echo "Installing pass..."
+          sudo apt-get update && sudo apt install -y pass
+        fi
+        if [ -n "$missing_pkgs" ]; then
+          echo "Installing missing packages: $missing_pkgs"
+          if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y $missing_pkgs
+          elif command -v yum >/dev/null 2>&1; then
+            sudo yum install -y $missing_pkgs
+          elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y $missing_pkgs
+          else
+            echo "ERROR: Cannot install packages automatically: $missing_pkgs" >&2
+            exit 1
+          fi
+        else
+          echo "All required packages are already installed"
+        fi
+        
+        # Проверяем установку bzip2 отдельно
+        if command -v bzip2 >/dev/null 2>&1; then
+          echo "bzip2 is installed: $(bzip2 --version 2>&1 | head -1)"
+        else
+          echo "ERROR: bzip2 not installed"
+          exit 1
+        fi
 
-      
-        # # 2. ОЧИСТКА ПУТИ ПЕРЕД КОПИРОВАНИЕМ
-        # - name: Clean up previous extraction directory
-        #   raw: |
-        #     ARCHIVE_NAME=$(basename "{{ archive_filename }}" .tar.bz2)
-        #     EXTRACT_DIR="{{ extract_dir }}/${ARCHIVE_NAME}"
-            
-        #     echo "Cleaning up previous installation..."
-            
-        #     # Удаляем только папку с именем архива
-        #     if [ -d "${EXTRACT_DIR}" ]; then
-        #       rm -rf "${EXTRACT_DIR}"
-        #       echo "✅ Removed ${EXTRACT_DIR}"
-        #     else
-        #       echo "ℹ️ Directory ${EXTRACT_DIR} does not exist"
-        #     fi
-            
-        #     # Удаляем только сам архив
-        #     if [ -f "{{ archive_dest }}" ]; then
-        #       rm -f "{{ archive_dest }}"
-        #       echo "✅ Removed old archive {{ archive_dest }}"
-        #     else
-        #       echo "ℹ️ Archive {{ archive_dest }} does not exist"
-        #     fi
-            
-        #     # НЕ удаляем родительскую папку {{ extract_dir }}
-        #     # Только создаем её если она не существует
-        #     if [ ! -d "{{ extract_dir }}" ]; then
-        #       mkdir -p "{{ extract_dir }}"
-        #       echo "✅ Created directory {{ extract_dir }}"
-        #     else
-        #       echo "ℹ️ Directory {{ extract_dir }} already exists, keeping it"
-        #     fi
-            
-        #     echo "✅ Cleanup completed"
-        #   register: cleanup_result
-        #   changed_when: false
-        #   become: yes
+        if ! command -v dos2unix >/dev/null 2>&1; then
+          echo "Installing dos2unix..."
+          sudo apt-get update && sudo apt-get install -y dos2unix
+        fi
+      register: package_install
+      changed_when: false
+      become: yes
+      when: inventory_hostname != jmeter_host
 
-        # 3. ПРОВЕРКА НАЛИЧИЯ ПАКЕТОВ
-        - name: Ensure required packages are installed
-          raw: |
-            missing_pkgs=""
-            for cmd in rsync bzip2 tar sshpass; do
-              if ! command -v $cmd >/dev/null 2>&1; then
-                missing_pkgs="$missing_pkgs $cmd"
-              fi
-            done
-            
-            if [ -n "$missing_pkgs" ]; then
-              echo "Installing missing packages: $missing_pkgs"
-              if command -v apt-get >/dev/null 2>&1; then
-                sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y $missing_pkgs
-              elif command -v yum >/dev/null 2>&1; then
-                sudo yum install -y $missing_pkgs
-              elif command -v dnf >/dev/null 2>&1; then
-                sudo dnf install -y $missing_pkgs
-              else
-                echo "ERROR: Cannot install packages automatically: $missing_pkgs" >&2
-                exit 1
-              fi
-            else
-              echo "All required packages are already installed"
+    # # 5. КОПИРОВАНИЕ АРХИВА НА ВСЕ ХОСТЫ
+    # - name: Copy archive to all hosts
+    #   shell: |
+    #     # Получаем пароль для текущего хоста из списка
+    #     CURRENT_HOST="{{ item }}"
+    #     CURRENT_USER="{{ hostvars[item]['ansible_user'] }}"
+    #     CURRENT_PASSWORD="{{ hostvars[item]['ansible_password'] }}"
+        
+    #     echo "Copying to $CURRENT_HOST..."
+        
+    #     # Копируем через scp
+    #     sshpass -p "$CURRENT_PASSWORD" scp -o ConnectTimeout=60 -o StrictHostKeyChecking=no \
+    #       "{{ archive_src }}" \
+    #       $CURRENT_USER@$CURRENT_HOST:"{{ archive_dest }}"
+        
+    #     if [ $? -eq 0 ]; then
+    #       echo "✅ Copied to $CURRENT_HOST"
+    #       sshpass -p "$CURRENT_PASSWORD" ssh $CURRENT_USER@$CURRENT_HOST "ls -lh {{ archive_dest }}"
+    #     else
+    #       echo "❌ Failed to copy to $CURRENT_HOST"
+    #       exit 1
+    #     fi
+    #   loop: "{{ groups['webservers'] }}"
+    #   delegate_to: localhost
+    #   run_once: true
+    #   when: archive_src is defined and archive_src != ""
+    #   no_log: false
+
+    # # 7. ПРОВЕРКА НАЛИЧИЯ АРХИВА ПЕРЕД РАСПАКОВКОЙ
+    # - name: Verify archive exists on target
+    #   raw: |
+    #     if [ -f "{{ archive_dest }}" ]; then
+    #       echo "✅ Archive found: {{ archive_dest }}"
+    #       ls -lh "{{ archive_dest }}"
+    #       file "{{ archive_dest }}"
+    #     else
+    #       echo "❌ Archive not found: {{ archive_dest }}"
+    #       echo "Contents of "{{ extract_dir }}":"
+    #       ls -la "{{ extract_dir }}"/
+    #       exit 1
+    #     fi
+    #   register: archive_check
+    #   changed_when: false
+
+    # # 8. РАСПАКОВКА АРХИВА В ПАПКУ С ПОЛНЫМ ИМЕНЕМ
+    # - name: Extract archive to folder
+    #   raw: |
+    #     cd "{{ extract_dir }}"
+        
+    #     # Получаем имя файла без расширения .tar.bz2
+    #     ARCHIVE_NAME=$(basename "{{ archive_filename }}" .tar.bz2)
+    #     EXTRACT_DIR=""{{ extract_dir }}"/${ARCHIVE_NAME}"
+        
+    #     echo "=== EXTRACTION INFO ==="
+    #     echo "Archive: {{ archive_dest }}"
+    #     echo "Extract to: ${EXTRACT_DIR}"
+        
+    #     # Создаем папку для распаковки
+    #     mkdir -p "${EXTRACT_DIR}"
+        
+    #     # Проверяем архив перед распаковкой
+    #     echo "Checking archive integrity..."
+    #     bzip2 -t "{{ archive_dest }}" 2>/dev/null
+    #     if [ $? -eq 0 ]; then
+    #       echo "✅ Archive integrity check passed"
+    #     else
+    #       echo "⚠️  Archive integrity check failed, but continuing..."
+    #     fi
+        
+    #     # Распаковываем архив в папку
+    #     echo "Extracting..."
+    #     tar -xjvf "{{ archive_dest }}" -C "${EXTRACT_DIR}" --strip-components=0 2>/dev/null
+        
+    #     EXIT_CODE=$?
+    #     if [ $EXIT_CODE -eq 0 ]; then
+    #       echo "✅ Extraction successful"
+    #       echo "Contents of ${EXTRACT_DIR}:"
+    #       ls -la "${EXTRACT_DIR}" | head -20
+    #     else
+    #       echo "❌ Extraction failed with code: $EXIT_CODE"
+    #       echo "Trying alternative extraction method..."
+    #       # Альтернативный метод распаковки
+    #       cd "${EXTRACT_DIR}"
+    #       bzip2 -dc "{{ archive_dest }}" | tar -xvf -
+    #       if [ $? -eq 0 ]; then
+    #         echo "✅ Alternative extraction successful"
+    #       else
+    #         echo "❌ All extraction methods failed"
+    #         exit 1
+    #       fi
+    #     fi
+    #   register: extract_result
+    #   changed_when: false
+    #   become: yes
+
+    # - name: Show extracted files
+    #   debug:
+    #     var: extract_result.stdout_lines
+
+    # # 13. ПРОВЕРКА РАСПАКОВАННЫХ ФАЙЛОВ
+    # - name: List extracted files
+    #   raw: |
+    #     ARCHIVE_NAME=$(basename "{{ archive_filename }}" .tar.bz2)
+    #     EXTRACT_DIR=""{{ extract_dir }}"/${ARCHIVE_NAME}"
+        
+    #     echo "=== Extracted files in ${EXTRACT_DIR} ==="
+    #     if [ -d "${EXTRACT_DIR}" ]; then
+    #       find "${EXTRACT_DIR}" -type f | head -20 | while read file; do
+    #         ls -la "$file"
+    #       done
+    #       echo ""
+    #       echo "Total files: $(find "${EXTRACT_DIR}" -type f | wc -l)"
+    #     else
+    #       echo "Directory ${EXTRACT_DIR} not found"
+    #       echo "Contents of "{{ extract_dir }}":"
+    #       ls -la "{{ extract_dir }}"/
+    #     fi
+    #   register: files_list
+    #   changed_when: false
+    #   when: extract_result is succeeded
+
+    # - name: Show extracted files
+    #   debug:
+    #     var: files_list.stdout_lines
+    #   when: extract_result is succeeded
+
+    # - name: Run installer2.py
+    #   raw: |
+        
+    #     # Переходим в директорию со скриптами
+    #     cd "{{ archive_filename | replace('.tar.bz2', '') }}"/scripts
+        
+    #     # Делаем скрипт исполняемым (на всякий случай)
+    #     chmod +x "{{ script_name }}"
+        
+    #     # Запускаем installer2.py с sudo паролем
+    #     python3 "{{ script_name }}" "{{ ansible_password }}"
+        
+    #     EXIT_CODE=$?
+    #     echo "Exit code: $EXIT_CODE"
+    #     echo "Finished at: $(date)"
+        
+    #     if [ $EXIT_CODE -eq 0 ]; then
+    #       echo "✅ installer2.py executed successfully"
+    #     else
+    #       echo "❌ installer2.py failed with exit code: $EXIT_CODE"
+    #       exit $EXIT_CODE
+    #     fi
+    #   register: installer2_run
+    #   become: yes
+    #   become_user: root
+    #   become_method: sudo
+    #   become_flags: '-S'
+
+    - name: Start RPLM.IP.Server process
+      raw: |
+        cd /opt/RPLM/
+        if [ -f ./RPLM.IP.Server ]; then
+          chmod +x ./RPLM.IP.Server
+          echo "Starting RPLM.IP.Server..."
+          nohup ./RPLM.IP.Server > /var/log/rplm_ip_server.log 2>&1 &
+          sleep 2
+          if pgrep -f RPLM.IP.Server > /dev/null; then
+            echo "✅ RPLM.IP.Server started successfully (PID: $(pgrep -f RPLM.IP.Server))"
+          else
+            echo "❌ Failed to start RPLM.IP.Server"
+            exit 1
+          fi
+        else
+          echo "❌ RPLM.IP.Server not found in /opt/RPLM/"
+          ls -la /opt/RPLM/
+          exit 1
+        fi
+      register: rplm_start
+      become: yes
+      changed_when: false
+      when: inventory_hostname != jmeter_host
+
+# КОПИРОВАНИЕ JMETER АРХИВА (С ЛОКАЛЬНОЙ МАШИНЫ)
+    - name: Copy JMeter archive to JMeter host
+      shell: |
+        JMETER_HOST="{{ jmeter_host }}"
+        JMETER_USER="{{ hostvars[jmeter_host]['ansible_user'] }}"
+        JMETER_PASSWORD="{{ hostvars[jmeter_host]['ansible_password'] }}"
+        
+        echo "Copying JMeter archive to $JMETER_HOST..."
+        
+        sshpass -p "$JMETER_PASSWORD" scp -o StrictHostKeyChecking=no \
+          "{{ jmeter_archive_src }}" \
+          $JMETER_USER@$JMETER_HOST:"/tmp/{{ jmeter_archive_src | basename }}"
+        
+        if [ $? -eq 0 ]; then
+          echo "✅ JMeter archive copied"
+        else
+          exit 1
+        fi
+      delegate_to: localhost
+      run_once: true
+      when: jmeter_host is defined and jmeter_host != ""
+
+    # РАСПАКОВКА JMETER АРХИВА
+    - name: Extract JMeter archive
+      raw: |
+        ARCHIVE_FILE="/tmp/{{ jmeter_archive_src | basename }}"
+        EXTRACT_DIR="{{ jmeter_remote_test_dir | default('/opt/jmeter_tests') }}"
+        
+        mkdir -p "$EXTRACT_DIR"
+        
+        # Устанавливаем unzip если нужно
+        if ! command -v unzip >/dev/null 2>&1; then
+          sudo apt-get update && sudo apt-get install -y unzip
+        fi
+        
+        # Распаковываем ZIP архив
+        unzip -o "$ARCHIVE_FILE" -d "$EXTRACT_DIR"
+        
+        if [ $? -eq 0 ]; then
+          echo "✅ Extraction successful"
+          ls -la "$EXTRACT_DIR"
+        else
+          exit 1
+        fi
+      delegate_to: "{{ jmeter_host }}"
+      run_once: true
+      become: yes
+      when: jmeter_host is defined
+
+  # УСТАНОВКА СВЕЖЕЙ ВЕРСИИ JMETER
+    - name: Install latest JMeter on JMeter host
+      raw: |
+        echo "=== Installing JMeter 5.6.3 on {{ jmeter_host }} ==="
+        
+        # Удаляем старую версию
+        sudo apt-get remove -y jmeter || true
+        
+        # Устанавливаем Java
+        if ! command -v java >/dev/null 2>&1; then
+          sudo apt-get update
+          sudo apt-get install -y openjdk-11-jre-headless
+        fi
+        
+        # Скачиваем JMeter
+        cd /tmp
+        if [ ! -f apache-jmeter-5.6.3.tgz ]; then
+          wget -q --show-progress https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz
+        fi
+        
+        tar -xzf apache-jmeter-5.6.3.tgz
+        sudo mv apache-jmeter-5.6.3 /opt/jmeter
+        sudo ln -sf /opt/jmeter/bin/jmeter /usr/local/bin/jmeter
+        
+        echo "✅ JMeter 5.6.3 installed successfully"
+        /usr/local/bin/jmeter --version 2>&1 | head -3
+      delegate_to: "{{ jmeter_host }}"
+      run_once: true
+      become: yes
+      when: jmeter_host is defined
+
+     # ЗАПУСК JMETER ТЕСТА С ОТОБРАЖЕНИЕМ ПРОГРЕССА
+    - name: Run JMeter test with progress display
+      raw: |
+        EXTRACT_DIR="{{ jmeter_remote_test_dir | default('/opt/jmeter_tests') }}"
+        JMX_FILE=$(find "$EXTRACT_DIR" -name "*.jmx" -type f | head -1)
+        RESULTS_DIR="{{ jmeter_results_remote_dir | default('/tmp/jmeter_results') }}"
+        TEST_DURATION="{{ test_duration | default(300) }}"
+        
+        # Получаем список хостов для теста
+        TARGET_HOSTS=""
+        for host in {{ groups['webservers'] | join(' ') }}; do
+          if [ "$host" != "{{ jmeter_host }}" ]; then
+            TARGET_HOSTS="$TARGET_HOSTS $host"
+          fi
+        done
+        
+        mkdir -p "$RESULTS_DIR"
+        
+        # Определяем переменные
+        FILE_SERVER=$(echo $TARGET_HOSTS | awk '{print $1}')
+        URL=$(echo $TARGET_HOSTS | awk '{print $2}')
+        URL1=$(echo $TARGET_HOSTS | awk '{print $3}')
+        
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        RESULT_FILE="$RESULTS_DIR/result_${TIMESTAMP}.jtl"
+        STATUS_FILE="$RESULTS_DIR/test_status.txt"
+        
+        echo "RUNNING" > "$STATUS_FILE"
+        echo "START_TIME=$(date +%s)" >> "$STATUS_FILE"
+        echo "TEST_DURATION=$TEST_DURATION" >> "$STATUS_FILE"
+        
+        echo "=== Starting JMeter test ==="
+        echo "Test ID: $TIMESTAMP"
+        echo "Target hosts: $TARGET_HOSTS"
+        echo "Test duration: $TEST_DURATION seconds"
+        echo "Start time: $(date)"
+        
+        # Запускаем тест
+        timeout $TEST_DURATION jmeter -n \
+          -t "$JMX_FILE" \
+          -l "$RESULT_FILE" \
+          -Jfile_server=$FILE_SERVER \
+          -Jurl=$URL \
+          -Jurl1=$URL1 \
+          -JDuration=$TEST_DURATION | while read line; do
+            echo "[JMETER] $line"
+            if echo "$line" | grep -q "summary ="; then
+              echo "📊 $line"
             fi
-          register: package_install
-          changed_when: false
-          become: yes
+          done
+        
+        EXIT_CODE=$?
+        END_TIME=$(date +%s)
+        
+        if [ $EXIT_CODE -eq 0 ] || [ $EXIT_CODE -eq 124 ]; then
+          echo "COMPLETED" > "$STATUS_FILE"
+          echo "✅ JMeter test completed successfully"
+        else
+          echo "FAILED" > "$STATUS_FILE"
+          echo "❌ JMeter test failed with exit code: $EXIT_CODE"
+          exit $EXIT_CODE
+        fi
+        
+        echo "END_TIME=$(date +%s)" >> "$STATUS_FILE"
+        echo "RESULT_FILE=$RESULT_FILE" >> "$STATUS_FILE"
+        echo "Test completed at: $(date)"
+      delegate_to: "{{ jmeter_host }}"
+      register: jmeter_run
+      run_once: true
+      become: yes
+      when: jmeter_host is defined
 
-        # # 4. КОПИРОВАНИЕ АРХИВА
-        # - name: Copy archive to host
-        #   shell: |
-        #     echo "Copying archive to {{ inventory_hostname }}..."
-            
-        #     sshpass -p "{{ ansible_password }}" scp -o ConnectTimeout=60 -o StrictHostKeyChecking=no \
-        #       "{{ archive_src }}" \
-        #       "{{ ansible_user }}@{{ inventory_hostname }}:{{ archive_dest }}"
-            
-        #     if [ $? -eq 0 ]; then
-        #       echo "✅ Archive copied successfully"
-        #       sshpass -p "{{ ansible_password }}" ssh "{{ ansible_user }}@{{ inventory_hostname }}" "ls -lh {{ archive_dest }}"
-        #     else
-        #       echo "❌ Failed to copy archive"
-        #       exit 1
-        #     fi
-        #   delegate_to: localhost
-        #   register: copy_archive
+    # ОТОБРАЖЕНИЕ СТАТУСА ЗАВЕРШЕНИЯ (без использования ansible_date_time)
+    - name: Display test completion status
+      debug:
+        msg: "✅ JMeter test completed"
+      run_once: true
+      when: jmeter_host is defined
 
-        # # 5. ПРОВЕРКА НАЛИЧИЯ АРХИВА
-        # - name: Verify archive exists on target
-        #   raw: |
-        #     if [ -f "{{ archive_dest }}" ]; then
-        #       echo "✅ Archive found: {{ archive_dest }}"
-        #       ls -lh "{{ archive_dest }}"
-        #       file "{{ archive_dest }}"
-        #     else
-        #       echo "❌ Archive not found: {{ archive_dest }}"
-        #       exit 1
-        #     fi
-        #   register: archive_check
-
-        # # 6. РАСПАКОВКА АРХИВА
-        # - name: Extract archive to folder
-        #   raw: |
-        #     cd "{{ extract_dir }}"
-            
-        #     ARCHIVE_NAME=$(basename "{{ archive_filename }}" .tar.bz2)
-        #     EXTRACT_DIR="{{ extract_dir }}/${ARCHIVE_NAME}"
-            
-        #     echo "=== EXTRACTION INFO ==="
-        #     echo "Archive: {{ archive_dest }}"
-        #     echo "Extract to: ${EXTRACT_DIR}"
-            
-        #     mkdir -p "${EXTRACT_DIR}"
-            
-        #     echo "Checking archive integrity..."
-        #     bzip2 -t "{{ archive_dest }}"
-        #     if [ $? -eq 0 ]; then
-        #       echo "✅ Archive integrity check passed"
-        #     else
-        #       echo "⚠️ Archive integrity check failed, but continuing..."
-        #     fi
-            
-        #     echo "Extracting..."
-        #     tar -xjvf "{{ archive_dest }}" -C "${EXTRACT_DIR}" --strip-components=0
-            
-        #     EXIT_CODE=$?
-        #     if [ $EXIT_CODE -eq 0 ]; then
-        #       echo "✅ Extraction successful"
-        #       echo "Contents of ${EXTRACT_DIR}:"
-        #       ls -la "${EXTRACT_DIR}" | head -20
-        #     else
-        #       echo "❌ Extraction failed with code: $EXIT_CODE"
-        #       cd "${EXTRACT_DIR}"
-        #       bzip2 -dc "{{ archive_dest }}" | tar -xvf -
-        #       if [ $? -eq 0 ]; then
-        #         echo "✅ Alternative extraction successful"
-        #       else
-        #         echo "❌ All extraction methods failed"
-        #         exit 1
-        #       fi
-        #     fi
-        #   register: extract_result
-        #   become: yes
-
-        # # 7. ЗАПУСК installer2.py
-        # - name: Run installer2.py
-        #   raw: |
-        #     ARCHIVE_NAME=$(basename "{{ archive_filename }}" .tar.bz2)
-        #     EXTRACT_DIR="{{ extract_dir }}/${ARCHIVE_NAME}"
-            
-        #     if [ ! -d "${EXTRACT_DIR}" ]; then
-        #       echo "❌ Extraction directory not found: ${EXTRACT_DIR}"
-        #       exit 1
-        #     fi
-            
-        #     cd "${EXTRACT_DIR}/scripts"
-            
-        #     if [ ! -f "{{ script_name }}" ]; then
-        #       echo "❌ Script {{ script_name }} not found in $(pwd)"
-        #       echo "Available files:"
-        #       ls -la
-        #       exit 1
-        #     fi
-            
-        #     if command -v dos2unix >/dev/null 2>&1; then
-        #       dos2unix "{{ script_name }}" 2>/dev/null
-        #     fi
-            
-        #     chmod +x "{{ script_name }}"
-            
-        #     echo "Starting installer2.py at: $(date)"
-        #     echo "Working directory: $(pwd)"
-            
-        #     python3 "{{ script_name }}" "{{ ansible_password }}"
-            
-        #     EXIT_CODE=$?
-        #     echo "Exit code: $EXIT_CODE"
-        #     echo "Finished at: $(date)"
-            
-        #     if [ $EXIT_CODE -eq 0 ]; then
-        #       echo "✅ installer2.py executed successfully"
-        #     else
-        #       echo "❌ installer2.py failed with exit code: $EXIT_CODE"
-        #       exit $EXIT_CODE
-        #     fi
-        #   register: installer2_run
-        #   become: yes
-        #   become_user: root
-        #   become_method: sudo
-        #   become_flags: '-S'
-
-        - name: Mark host as successful
-          set_fact:
-            host_deployment_success: true
-
-      rescue:
-        - name: Handle failure for {{ inventory_hostname }}
-          debug:
-            msg: |
-              ========================================
-              ❌ FAILURE on {{ inventory_hostname }}
-              ========================================
-
-        - name: Set failure flag
-          set_fact:
-            host_deployment_success: false
-
-      always:
-        - name: Display final status for {{ inventory_hostname }}
-          debug:
-            msg: |
-              ========================================
-              FINAL STATUS FOR {{ inventory_hostname }}
-              Result: {{ '✅ SUCCESS' if host_deployment_success | default(false) else '❌ FAILED' }}
-              ========================================
-
-
-  any_errors_fatal: false
-  max_fail_percentage: 0
+    # ПОКАЗАТЬ ВРЕМЯ ЗАВЕРШЕНИЯ ИЗ ВЫВОДА ТЕСТА
+    - name: Show test completion time
+      debug:
+        var: jmeter_run.stdout_lines[-5:]
+      run_once: true
+      when: jmeter_host is defined and jmeter_run.stdout is defined

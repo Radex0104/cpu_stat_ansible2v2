@@ -49,6 +49,13 @@ MainWindow::MainWindow(QWidget *parent)
     qDebug() << "Python script path:" << pythonScriptPath;
     
     ansibleRunner->setPlaybookPath(playbookPath);
+    AppSettings& settings = AppSettings::instance();
+    ansibleRunner->setJmeterHost(settings.getJmeterHost());
+    ansibleRunner->setJmeterArchiveSrc(settings.getLocalArchivePath());  // <-- ДОБАВИТЬ ЭТУ СТРОКУ
+    ansibleRunner->setJmeterRemoteTestDir(settings.getRemoteTestDir());
+    ansibleRunner->setJmeterResultsRemoteDir(settings.getResultsRemoteDir());
+    ansibleRunner->setJmeterResultsLocalDir(settings.getResultsLocalDir());
+    ansibleRunner->setJmeterTestDuration(settings.getTestDuration());
     QPushButton* showGraphsBtn = graphics->getShowGraphsButton();
         if (showGraphsBtn && showGraphsBtn->text().contains("Показать")) {
             showGraphsBtn->click();

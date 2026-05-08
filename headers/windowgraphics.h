@@ -15,6 +15,7 @@
 #include <QtCharts>
 #include "ProgressManager.h"
 #include "graphmanager.h"
+#include "appsettings.h"
 #include <QtCharts/QChartView>
 
 // Предварительное объявление
@@ -216,6 +217,7 @@ private:
     bool m_graphsVisible;
     GraphManager *m_graphManager;
     QChartView *m_chartView;
+    SettingsButton* m_settingsButton;
 
     void setupGraphTabs();
     void addGraphTab(const QString& title, const QString& prometheusQuery);

@@ -122,6 +122,14 @@ void WindowGraphics::setupUI()
     );
     refreshAllGraphsButton->setVisible(false);
     connect(refreshAllGraphsButton, &QPushButton::clicked, this, &WindowGraphics::onRefreshAllGraphsClicked);
+
+    m_settingsButton = new SettingsButton(this);
+    graphControlLayout->addWidget(m_settingsButton);
+
+    // Подключите сигнал:
+    connect(m_settingsButton, &SettingsButton::settingsChanged, 
+            this, &WindowGraphics::onRefreshAllGraphsClicked);
+
     graphControlLayout->addWidget(refreshAllGraphsButton);
     
     graphControlLayout->addStretch();

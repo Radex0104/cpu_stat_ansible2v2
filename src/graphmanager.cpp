@@ -1,5 +1,6 @@
 #include "graphmanager.h"
 #include "windowgraphics.h"
+#include "appsettings.h"
 
 QT_CHARTS_USE_NAMESPACE
 
@@ -74,17 +75,17 @@ void GraphManager::buildPrometheusChart(QtCharts::QChartView* chartView, const Q
     qDebug() << "Building chart with query:" << query;
     
     // ============ ПРЯМОЙ ЗАПРОС К PROMETHEUS ============
-    QString prometheusUrl = "http://192.168.0.121:9090";
+    QString prometheusUrl = AppSettings::instance().getFullPrometheusUrl();
     QDateTime now = QDateTime::currentDateTime();
 
 // Вычисляем время час назад
 QDateTime oneHourAgo = now.addSecs(-3600); // -3600 секунд = -1 час
 
 // Форматируем в нужный формат
-// QString dateStart = oneHourAgo.toString("yyyy-MM-dd HH:mm:ss");
-// QString dateEnd = now.toString("yyyy-MM-dd HH:mm:ss");
-QString dateStart = "2026-04-28 17:00:00";
-QString dateEnd = "2026-04-28 19:00:00";
+QString dateStart = oneHourAgo.toString("yyyy-MM-dd HH:mm:ss");
+QString dateEnd = now.toString("yyyy-MM-dd HH:mm:ss");
+// QString dateStart = "2026-04-28 17:00:00";
+// QString dateEnd = "2026-04-28 19:00:00";
 
 // qDebug() << "Time range:" << dateStart << "-" << dateEnd;
     
