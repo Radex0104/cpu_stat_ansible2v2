@@ -23,27 +23,27 @@ public:
     // JMeter настройки
     void setJmeterHost(const QString& host) { 
         jmeterHost = host; 
-        qDebug() << "AnsibleRunner::setJmeterHost:" << host;
+        // // qDebug() << "AnsibleRunner::setJmeterHost:" << host;
     }
     void setJmeterArchiveSrc(const QString& src) { 
         jmeterArchiveSrc = src; 
-        qDebug() << "AnsibleRunner::setJmeterArchiveSrc:" << src;
+        // // qDebug() << "AnsibleRunner::setJmeterArchiveSrc:" << src;
     }
     void setJmeterRemoteTestDir(const QString& dir) { 
         jmeterRemoteTestDir = dir; 
-        qDebug() << "AnsibleRunner::setJmeterRemoteTestDir:" << dir;
+        // // qDebug() << "AnsibleRunner::setJmeterRemoteTestDir:" << dir;
     }
     void setJmeterResultsRemoteDir(const QString& dir) { 
         jmeterResultsRemoteDir = dir; 
-        qDebug() << "AnsibleRunner::setJmeterResultsRemoteDir:" << dir;
+        // // qDebug() << "AnsibleRunner::setJmeterResultsRemoteDir:" << dir;
     }
     void setJmeterResultsLocalDir(const QString& dir) { 
         jmeterResultsLocalDir = dir; 
-        qDebug() << "AnsibleRunner::setJmeterResultsLocalDir:" << dir;
+        // // qDebug() << "AnsibleRunner::setJmeterResultsLocalDir:" << dir;
     }
     void setJmeterTestDuration(int duration) { 
         jmeterTestDuration = duration; 
-        qDebug() << "AnsibleRunner::setJmeterTestDuration:" << duration;
+        // // qDebug() << "AnsibleRunner::setJmeterTestDuration:" << duration;
     }
 
     

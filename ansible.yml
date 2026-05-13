@@ -226,14 +226,38 @@
 
     # - name: Run installer2.py
     #   raw: |
+    #     # Получаем имя директории из имени архива
+    #     ARCHIVE_NAME=$(basename "{{ archive_filename }}" .tar.bz2)
+    #     EXTRACT_DIR="{{ extract_dir }}/${ARCHIVE_NAME}"
+        
+    #     echo "=== Running installer2.py ==="
+    #     echo "Archive name: {{ archive_filename }}"
+    #     echo "Extract dir: ${EXTRACT_DIR}"
+        
+    #     # Проверяем существование директории
+    #     if [ ! -d "${EXTRACT_DIR}" ]; then
+    #       echo "❌ Directory ${EXTRACT_DIR} not found!"
+    #       echo "Contents of {{ extract_dir }}:"
+    #       ls -la "{{ extract_dir }}/"
+    #       exit 1
+    #     fi
         
     #     # Переходим в директорию со скриптами
-    #     cd "{{ archive_filename | replace('.tar.bz2', '') }}"/scripts
+    #     cd "${EXTRACT_DIR}/scripts"
         
-    #     # Делаем скрипт исполняемым (на всякий случай)
+    #     # Проверяем наличие скрипта
+    #     if [ ! -f "{{ script_name }}" ]; then
+    #       echo "❌ {{ script_name }} not found in $(pwd)"
+    #       echo "Available files:"
+    #       ls -la
+    #       exit 1
+    #     fi
+        
+    #     # Делаем скрипт исполняемым
     #     chmod +x "{{ script_name }}"
         
-    #     # Запускаем installer2.py с sudo паролем
+    #     # Запускаем installer2.py с передачей пароля
+    #     echo "Starting installation on {{ inventory_hostname }}..."
     #     python3 "{{ script_name }}" "{{ ansible_password }}"
         
     #     EXIT_CODE=$?
@@ -241,16 +265,16 @@
     #     echo "Finished at: $(date)"
         
     #     if [ $EXIT_CODE -eq 0 ]; then
-    #       echo "✅ installer2.py executed successfully"
+    #       echo "✅ installer2.py executed successfully on {{ inventory_hostname }}"
     #     else
     #       echo "❌ installer2.py failed with exit code: $EXIT_CODE"
     #       exit $EXIT_CODE
     #     fi
     #   register: installer2_run
     #   become: yes
-    #   become_user: root
-    #   become_method: sudo
-    #   become_flags: '-S'
+    #   when: 
+    #     - inventory_hostname != jmeter_host
+    #     - ansible_password is defined
 
     - name: Start RPLM.IP.Server process
       raw: |
@@ -404,13 +428,26 @@
       become: yes
       register: node_exporter_install
 
-     # ЗАПУСК JMETER ТЕСТА С ОТОБРАЖЕНИЕМ ПРОГРЕССА
-    - name: Run JMeter test
+    - name: Check node_exporter is running
+      raw: |
+        curl -s http://localhost:9100/metrics | head -5
+      register: node_check
+      when: inventory_hostname != jmeter_host
+
+    - name: Show node_exporter status
+      debug:
+        var: node_check.stdout_lines
+      when: inventory_hostname != jmeter_host
+
+    # ЗАПУСК JMETER ТЕСТА С ПЕРЕДАЧЕЙ TARGET_HOST
+    - name: Run JMeter test with target host label
       raw: |
         EXTRACT_DIR="{{ jmeter_remote_test_dir | default('/opt/jmeter_tests') }}"
         JMX_FILE=$(find "$EXTRACT_DIR" -name "*.jmx" -type f | head -1)
         RESULTS_DIR="{{ jmeter_results_remote_dir | default('/tmp/jmeter_results') }}"
         TEST_DURATION="{{ test_duration | default(300) }}"
+        
+        mkdir -p "$RESULTS_DIR"
         
         # Получаем список хостов для теста
         TARGET_HOSTS=""
@@ -420,72 +457,41 @@
           fi
         done
         
-        mkdir -p "$RESULTS_DIR"
-        
-        # Определяем переменные
-        FILE_SERVER=$(echo $TARGET_HOSTS | awk '{print $1}')
-        URL=$(echo $TARGET_HOSTS | awk '{print $2}')
-        URL1=$(echo $TARGET_HOSTS | awk '{print $3}')
-        
-        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-        RESULT_FILE="$RESULTS_DIR/result_${TIMESTAMP}.jtl"
-        STATUS_FILE="$RESULTS_DIR/test_status.txt"
-        
-        echo "RUNNING" > "$STATUS_FILE"
-        echo "START_TIME=$(date +%s)" >> "$STATUS_FILE"
-        echo "TEST_DURATION=$TEST_DURATION" >> "$STATUS_FILE"
-        
-        echo "=== Starting JMeter test ==="
-        echo "Test ID: $TIMESTAMP"
-        echo "Target hosts: $TARGET_HOSTS"
-        echo "Test duration: $TEST_DURATION seconds"
-        echo "Start time: $(date)"
-        
-        # Запускаем тест
-        timeout $TEST_DURATION jmeter -n \
-          -t "$JMX_FILE" \
-          -l "$RESULT_FILE" \
-          -Jfile_server=$FILE_SERVER \
-          -Jurl=$URL \
-          -Jurl1=$URL1 \
-          -JDuration=$TEST_DURATION | while read line; do
-            echo "[JMETER] $line"
-            if echo "$line" | grep -q "summary ="; then
-              echo "📊 $line"
-            fi
-          done
-        
-        EXIT_CODE=$?
-        END_TIME=$(date +%s)
-        
-        if [ $EXIT_CODE -eq 0 ] || [ $EXIT_CODE -eq 124 ]; then
-          echo "COMPLETED" > "$STATUS_FILE"
-          echo "✅ JMeter test completed successfully"
-        else
-          echo "FAILED" > "$STATUS_FILE"
-          echo "❌ JMeter test failed with exit code: $EXIT_CODE"
-          exit $EXIT_CODE
-        fi
-        
-        echo "END_TIME=$(date +%s)" >> "$STATUS_FILE"
-        echo "RESULT_FILE=$RESULT_FILE" >> "$STATUS_FILE"
-        echo "Test completed at: $(date)"
+        # Запускаем тест для каждого хоста отдельно
+        for TARGET in $TARGET_HOSTS; do
+          echo "=== Testing host: $TARGET ==="
+          echo "Start time: $(date)"
+          
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          RESULT_FILE="$RESULTS_DIR/result_${TARGET}_${TIMESTAMP}.jtl"
+          
+          # Запускаем тест
+          timeout $TEST_DURATION /usr/local/bin/jmeter -n \
+            -t "$JMX_FILE" \
+            -l "$RESULT_FILE" \
+            -Jtarget_host=$TARGET \
+            -Jfile_server=$TARGET \
+            -Jurl=$TARGET \
+            -Jurl1=$TARGET \
+            -JDuration=$TEST_DURATION \
+            -Jsample_variables=target_host
+          
+          if [ $? -eq 0 ] || [ $? -eq 124 ]; then
+            echo "✅ Test completed for $TARGET"
+            echo "Results: $RESULT_FILE"
+            
+            # Проверяем, что target_host записался
+            echo "First 5 lines of result:"
+            head -5 "$RESULT_FILE"
+          else
+            echo "❌ Test failed for $TARGET"
+          fi
+          
+          echo "Finished at: $(date)"
+          echo "---"
+        done
       delegate_to: "{{ jmeter_host }}"
       register: jmeter_run
       run_once: true
       become: yes
       when: jmeter_host is defined
-
-    # ОТОБРАЖЕНИЕ СТАТУСА ЗАВЕРШЕНИЯ (без использования ansible_date_time)
-    - name: Display test completion status
-      debug:
-        msg: "✅ JMeter test completed"
-      run_once: true
-      when: jmeter_host is defined
-
-    # ПОКАЗАТЬ ВРЕМЯ ЗАВЕРШЕНИЯ ИЗ ВЫВОДА ТЕСТА
-    - name: Show test completion time
-      debug:
-        var: jmeter_run.stdout_lines[-5:]
-      run_once: true
-      when: jmeter_host is defined and jmeter_run.stdout is defined

@@ -16,7 +16,6 @@ find_package(Qt5 REQUIRED COMPONENTS Core Widgets Gui Charts Network)
 # Добавляем директории с заголовками
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/headers)
 
-
 # Основное приложение
 file(GLOB SOURCES
     src/*.cpp

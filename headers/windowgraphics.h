@@ -181,6 +181,9 @@ public:
     QPushButton* getRemoveHostButton() const { return removeHostButton; }
     QPushButton* getPlayButton() const { return playButton; }
     ProgressManager* getProgressManager() const { return progressManager; }
+    void setupGraphTabs();
+
+    void addHostGraphTab(const QString &host, const QString &title, const QString &prometheusQuery);
 
 signals:
     void fileDropped(const QString& filePath);
@@ -192,7 +195,9 @@ void onRefreshAllGraphsClicked();
 private:
     void setupUI();
     void updatePlayButtonState();
-    
+    QString injectInstanceFilter(const QString &query, const QString &instance);
+    QTabWidget *getOrCreateHostTab(const QString &host); // Новая функция
+    QMap<QString, QTabWidget*> m_hostInnerTabs;
     QLabel *dragDropLabel;
     QLabel *filePathLabel;
     QLineEdit *newHostEdit;
@@ -219,7 +224,7 @@ private:
     QChartView *m_chartView;
     SettingsButton* m_settingsButton;
 
-    void setupGraphTabs();
+    
     void addGraphTab(const QString& title, const QString& prometheusQuery);
 };
 

@@ -35,8 +35,8 @@ public:
                     tickCount = 8;
                 }
                 
-                qDebug() << "Resize: width=" << width << "setting tickCount=" << tickCount 
-                         << "(range unchanged:" << m_minTime << "-" << m_maxTime << ")";
+                // // qDebug() << "Resize: width=" << width << "setting tickCount=" << tickCount 
+                  //       << "(range unchanged:" << m_minTime << "-" << m_maxTime << ")";
                 
                 // Меняем только количество меток, НЕ трогаем диапазон!
                 m_axisX->setTickCount(tickCount);
@@ -68,11 +68,10 @@ struct SeriesData {
 
 void GraphManager::buildPrometheusChart(QtCharts::QChartView* chartView, const QString& query) {
     if (!chartView) {
-        qDebug() << "ChartView is null!";
+        // // qDebug() << "ChartView is null!";
         return;
     }
-    
-    qDebug() << "Building chart with query:" << query;
+    // // qDebug() << "Building chart with query:" << query;
     
     // ============ ПРЯМОЙ ЗАПРОС К PROMETHEUS ============
     QString prometheusUrl = AppSettings::instance().getFullPrometheusUrl();
@@ -87,7 +86,7 @@ QString dateEnd = now.toString("yyyy-MM-dd HH:mm:ss");
 // QString dateStart = "2026-04-28 17:00:00";
 // QString dateEnd = "2026-04-28 19:00:00";
 
-// qDebug() << "Time range:" << dateStart << "-" << dateEnd;
+// // // qDebug() << "Time range:" << dateStart << "-" << dateEnd;
     
     QJsonObject response = requestPrometheus(prometheusUrl, dateStart, dateEnd, query);
     
@@ -96,70 +95,17 @@ QString dateEnd = now.toString("yyyy-MM-dd HH:mm:ss");
     bool isCPUQuery = query.contains("cpu", Qt::CaseInsensitive);
     bool isMemoryQuery = query.contains("memory", Qt::CaseInsensitive);
 
-    qDebug() << "Query type:" << (isRPSQuery ? "RPS" : isCPUQuery ? "CPU" : isMemoryQuery ? "Memory" : "Response Time");
-
-    if (response.isEmpty()) {
-        qDebug() << "Failed to get data from Prometheus, falling back to file...";
-        
-        // // Определяем имя тестового файла
-        // QString testFileName;
-        // if (query.contains("avg(jmeter_rt_summary)", Qt::CaseInsensitive)) {
-        //     testFileName = "data_response_time.json";
-        // } else if (query.contains("by (label)", Qt::CaseInsensitive) && query.contains("rate(", Qt::CaseInsensitive)) {
-        //     testFileName = "data_rps_by_endpoint.json";
-        // } else if (query.contains("rate(", Qt::CaseInsensitive)) {
-        //     testFileName = "data_rps_total.json";
-        // } else if (isCPUQuery) {
-        //     testFileName = "data_cpu.json";
-        // } else if (isMemoryQuery) {
-        //     testFileName = "data_memory.json";
-        // } else {
-        //     testFileName = "data_response_time.json";
-        // }
-        
-        // qDebug() << "Looking for test file:" << testFileName;
-        
-        // QFile file(testFileName);
-        // if (!file.exists()) {
-        //     // Пробуем с ../ если не нашли в текущей папке
-        //     testFileName = "../" + testFileName;
-        //     file.setFileName(testFileName);
-        // }
-        // if (!file.exists()) {
-        //     testFileName = "../../" + testFileName;
-        //     file.setFileName(testFileName);
-        // }
-        
-        // if (!file.exists()) {
-        //     qDebug() << "Test file not found:" << testFileName;
-        //     return;
-        // }
-        
-        // if (!file.open(QIODevice::ReadOnly)) {
-        //     qDebug() << "Failed to open file:" << file.errorString();
-        //     return;
-        // }
-        
-        // QByteArray data = file.readAll();
-        // QJsonDocument doc = QJsonDocument::fromJson(data);
-        // response = doc.object();
-        // file.close();
-        
-        // qDebug() << "Loaded test data from:" << testFileName;
-    } else {
-        qDebug() << "Successfully got data from Prometheus";
-        
+    // // qDebug() << "Query type:" << (isRPSQuery ? "RPS" : isCPUQuery ? "CPU" : isMemoryQuery ? "Memory" : "Response Time");
         // Сохраняем ответ для отладки
         QFile file("prometheus_response.json");
         if (file.open(QIODevice::WriteOnly)) {
             QJsonDocument doc(response);
             file.write(doc.toJson(QJsonDocument::Indented));
             file.close();
-            qDebug() << "Response saved to prometheus_response.json";
+            // // qDebug() << "Response saved to prometheus_response.json";
         }
-    }
     
-    qDebug() << "JSON parsed, status:" << response["status"].toString();
+    // // qDebug() << "JSON parsed, status:" << response["status"].toString();
     
     // ============ ОБРАБОТКА ДАННЫХ ============
     struct SeriesData {
@@ -211,7 +157,6 @@ QString dateEnd = now.toString("yyyy-MM-dd HH:mm:ss");
                     }
                 }
             }
-            
             if (!sd.values.isEmpty()) {
                 sd.meanValue = calculateMean(numValues);
                 allSeries.append(sd);
@@ -231,11 +176,11 @@ QString dateEnd = now.toString("yyyy-MM-dd HH:mm:ss");
         allSeries = allSeries.mid(0, maxSeries);
     }
     
-    qDebug() << "Total series:" << allSeries.size();
-    qDebug() << "Total timestamps:" << allTimestamps.size();
+    // // qDebug() << "Total series:" << allSeries.size();
+    // // qDebug() << "Total timestamps:" << allTimestamps.size();
     
     if (allSeries.isEmpty() || allTimestamps.isEmpty()) {
-        qDebug() << "No data to display!";
+        // // qDebug() << "No data to display!";
         return;
     }
     
@@ -323,8 +268,8 @@ QString dateEnd = now.toString("yyyy-MM-dd HH:mm:ss");
     chart->addSeries(areaSeries);
     areaSeriesList.append(areaSeries);
     
-    qDebug() << "Added series:" << seriesName 
-             << "color:" << seriesColor.name();
+    // // qDebug() << "Added series:" << seriesName 
+     //        << "color:" << seriesColor.name();
 }
     
     // ============ НАСТРОЙКА ОСЕЙ ============
@@ -359,8 +304,14 @@ QString dateEnd = now.toString("yyyy-MM-dd HH:mm:ss");
         if (sd.maxValue > globalMaxValue) {
             globalMaxValue = sd.maxValue;
         }
+        axisY->setTickCount(5);
     }
-    axisY->setRange(0, globalMaxValue * 1.1);
+    if (globalMaxValue < 1) {
+            axisY->setRange(0, 1);
+            axisY->setLabelFormat("%.2f");
+        } else {
+            axisY->setRange(0, globalMaxValue * 1.1);
+        }
 
     chart->addAxis(axisY, Qt::AlignLeft);
 
@@ -386,8 +337,8 @@ QString dateEnd = now.toString("yyyy-MM-dd HH:mm:ss");
         style.isTop3 = (idx < 3);
         seriesStyles.append(style);
         
-        qDebug() << "Series" << idx << "color:" << style.color.name() 
-                << "isTop3:" << style.isTop3;
+        // // qDebug() << "Series" << idx << "color:" << style.color.name() 
+        //        << "isTop3:" << style.isTop3;
         // Оригинальная линия
         QPen normalPen(style.color, 2);
         style.series->setPen(normalPen);
@@ -526,7 +477,7 @@ if (zoomView) {
 chartView->setChart(chart);
 delete oldChart;
     
-    qDebug() << "Chart created successfully with" << allSeries.size() << "series";
+    // // qDebug() << "Chart created successfully with" << allSeries.size() << "series";
 }
 
 QJsonObject GraphManager::requestPrometheus(const QString& prometheusUrl, 
@@ -539,20 +490,20 @@ QJsonObject GraphManager::requestPrometheus(const QString& prometheusUrl,
     QDateTime dtEnd = QDateTime::fromString(dateEnd, "yyyy-MM-dd HH:mm:ss");
     
     if (!dtStart.isValid() || !dtEnd.isValid()) {
-        qDebug() << "Invalid date format!";
+        // // qDebug() << "Invalid date format!";
         return QJsonObject();
     }
     
     if (dtStart >= dtEnd) {
-        qDebug() << "Start date must be before end date!";
+        // // qDebug() << "Start date must be before end date!";
         return QJsonObject();
     }
     
     qint64 startTimestamp = dtStart.toSecsSinceEpoch();
     qint64 endTimestamp = dtEnd.toSecsSinceEpoch();
     
-    qDebug() << "Querying Prometheus:" << prometheusUrl;
-    qDebug() << "Time range:" << dateStart << "-" << dateEnd;
+    // // qDebug() << "Querying Prometheus:" << prometheusUrl;
+    // // qDebug() << "Time range:" << dateStart << "-" << dateEnd;
     
     // Формируем URL запроса
     QUrl url(prometheusUrl + "/api/v1/query_range");
@@ -580,7 +531,7 @@ QJsonObject GraphManager::requestPrometheus(const QString& prometheusUrl,
     loop.exec();
     
     if (!timer.isActive()) {
-        qDebug() << "Prometheus request timeout";
+        // // qDebug() << "Prometheus request timeout";
         reply->abort();
         reply->deleteLater();
         return QJsonObject();
@@ -588,15 +539,15 @@ QJsonObject GraphManager::requestPrometheus(const QString& prometheusUrl,
     timer.stop();
     
     if (reply->error() != QNetworkReply::NoError) {
-        qDebug() << "HTTP error:" << reply->errorString();
+        // // qDebug() << "HTTP error:" << reply->errorString();
         reply->deleteLater();
         return QJsonObject();
     }
     
     int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     if (statusCode != 200) {
-        qDebug() << "Prometheus returned error:" << statusCode;
-        qDebug() << "Response:" << reply->readAll();
+        // // qDebug() << "Prometheus returned error:" << statusCode;
+        // // qDebug() << "Response:" << reply->readAll();
         reply->deleteLater();
         return QJsonObject();
     }
@@ -606,23 +557,23 @@ QJsonObject GraphManager::requestPrometheus(const QString& prometheusUrl,
     reply->deleteLater();
     
     if (!doc.isObject()) {
-        qDebug() << "Invalid JSON response";
+        // // qDebug() << "Invalid JSON response";
         return QJsonObject();
     }
     
-    qDebug() << "Prometheus response received, size:" << responseData.size() << "bytes";
+    // // qDebug() << "Prometheus response received, size:" << responseData.size() << "bytes";
     
     return doc.object();
 }
 
 void GraphManager::forceUpdateYAxis() {
-    qDebug() << "Force update Y axis called for all charts";
+    // // qDebug() << "Force update Y axis called for all charts";
     
     // Обновляем все активные графики
     for (auto it = m_updaters.begin(); it != m_updaters.end(); ++it) {
         if (it.value() && !it.value().isNull()) {
             it.value()->updateYAxis();
-            qDebug() << "Updated Y axis for chart:" << it.key();
+            // // qDebug() << "Updated Y axis for chart:" << it.key();
         }
     }
 }

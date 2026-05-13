@@ -27,7 +27,6 @@ MainWindow::MainWindow(QWidget *parent)
     checker = new WSLChecker(this);
     configManager = new ConfigManager(this);
     ansibleRunner = new AnsibleRunner(this);
-
     ansibleRunner->setProgressManager(graphics->getProgressManager());
 
     loadSavedConfiguration();
@@ -45,17 +44,18 @@ MainWindow::MainWindow(QWidget *parent)
     // pythonScriptPathWsl = "/mnt/c/Users/Admin/Desktop/practic/cpu_stat_ansible2v2/src/cicd.py";
     pythonScriptPath = QDir::cleanPath(pythonScriptPath);
     
-    qDebug() << "Playbook path:" << playbookPath;
-    qDebug() << "Python script path:" << pythonScriptPath;
+    // // qDebug() << "Playbook path:" << playbookPath;
+    // // qDebug() << "Python script path:" << pythonScriptPath;
     
     ansibleRunner->setPlaybookPath(playbookPath);
     AppSettings& settings = AppSettings::instance();
     ansibleRunner->setJmeterHost(settings.getJmeterHost());
-    ansibleRunner->setJmeterArchiveSrc(settings.getLocalArchivePath());  // <-- ДОБАВИТЬ ЭТУ СТРОКУ
+    ansibleRunner->setJmeterArchiveSrc(settings.getLocalArchivePath());
     ansibleRunner->setJmeterRemoteTestDir(settings.getRemoteTestDir());
     ansibleRunner->setJmeterResultsRemoteDir(settings.getResultsRemoteDir());
     ansibleRunner->setJmeterResultsLocalDir(settings.getResultsLocalDir());
     ansibleRunner->setJmeterTestDuration(settings.getTestDuration());
+    graphics->setupGraphTabs();
     QPushButton* showGraphsBtn = graphics->getShowGraphsButton();
         if (showGraphsBtn && showGraphsBtn->text().contains("Показать")) {
             showGraphsBtn->click();
@@ -143,14 +143,14 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 
 void MainWindow::onWslCheckCompleted(const WSLChecker::WSLInfo &info)
 {
-    qDebug() << info.isInstalled;
-    qDebug() << "WSL is installed:" << (info.isInstalled ? "yes" : "no");
+    // // qDebug() << info.isInstalled;
+    // // qDebug() << "WSL is installed:" << (info.isInstalled ? "yes" : "no");
     
     if (info.isInstalled) {
         if (info.hasDistributions) {
             QString status = "WSL ready: " + info.distributions.join(", ");
             graphics->appendStatusBar(status);
-            qDebug() << "distr:" << info.distributions;
+            // // qDebug() << "distr:" << info.distributions;
         } else {
             graphics->appendStatusBar("WSL is installed, but no distr");
         }
@@ -185,12 +185,12 @@ void MainWindow::dropEvent(QDropEvent *event)
             QString filePath = urlList.first().toLocalFile();
             QFileInfo fileInfo(filePath);
             
-            qDebug() << "=== DROP EVENT ===";
-            qDebug() << "File path:" << filePath;
-            qDebug() << "Is file:" << fileInfo.isFile();
-            qDebug() << "Is dir:" << fileInfo.isDir();
-            qDebug() << "Suffix:" << fileInfo.suffix();
-            qDebug() << "Complete suffix:" << fileInfo.completeSuffix();
+            // // qDebug() << "=== DROP EVENT ===";
+            // // qDebug() << "File path:" << filePath;
+            // // qDebug() << "Is file:" << fileInfo.isFile();
+            // // qDebug() << "Is dir:" << fileInfo.isDir();
+            // // qDebug() << "Suffix:" << fileInfo.suffix();
+            // // qDebug() << "Complete suffix:" << fileInfo.completeSuffix();
             
             emit fileDropped(fileInfo);
             
@@ -198,12 +198,12 @@ void MainWindow::dropEvent(QDropEvent *event)
                 QString suffix = fileInfo.suffix().toLower();
                 QString completeSuffix = fileInfo.completeSuffix().toLower();
                 
-                qDebug() << "Checking suffixes - suffix:" << suffix << "completeSuffix:" << completeSuffix;
+                // // qDebug() << "Checking suffixes - suffix:" << suffix << "completeSuffix:" << completeSuffix;
                 
                 if (suffix == "gz" || suffix == "tgz" || suffix == "tar" || 
                     suffix == "zip" || suffix == "bz2" || completeSuffix == "tar.bz2") {
                     
-                    qDebug() << "Archive file detected";
+                    // // qDebug() << "Archive file detected";
                     
                     QString archivePath = filePath;
                     currentArchivePath = archivePath;
@@ -214,16 +214,16 @@ void MainWindow::dropEvent(QDropEvent *event)
                         graphics->appendOutput("📦 Архив добавлен: " + fileInfo.fileName());
                     }
                 } else {
-                    qDebug() << "File is not an archive";
+                    // // qDebug() << "File is not an archive";
                 }
             }
             else if (fileInfo.isDir()) {
-                qDebug() << "Directory detected";
+                // // qDebug() << "Directory detected";
                 
                 QString foundArchivePath;
                 
                 if (ansibleRunner->filesFinder(filePath, &foundArchivePath)) {
-                    qDebug() << "filesFinder returned:" << foundArchivePath;
+                    // // qDebug() << "filesFinder returned:" << foundArchivePath;
                     
                     if (!foundArchivePath.isEmpty()) {
                         currentArchivePath = foundArchivePath;
@@ -237,15 +237,15 @@ void MainWindow::dropEvent(QDropEvent *event)
                             graphics->appendOutput("📦 Архив найден в папке: " + QFileInfo(foundArchivePath).fileName());
                         }
                     } else {
-                        qDebug() << "No archive found in directory";
+                        // // qDebug() << "No archive found in directory";
                         graphics->updateFilePathLabel("В папке не найдено архивов", false);
                     }
                 } else {
-                    qDebug() << "filesFinder failed";
+                    // // qDebug() << "filesFinder failed";
                 }
             }
             
-            qDebug() << "currentArchivePath after drop:" << currentArchivePath;
+            // // qDebug() << "currentArchivePath after drop:" << currentArchivePath;
         }
     }
 }
@@ -301,6 +301,8 @@ void MainWindow::onPlayButtonClicked()
         showMessage("Не выбран архив для установки", true);
         return;
     }
+    AppSettings& settings = AppSettings::instance();
+    ansibleRunner->setJmeterTestDuration(settings.getTestDuration());
 
     // Получаем только выбранные хосты
     QList<int> selectedIndices = graphics->getSelectedHostIndices();

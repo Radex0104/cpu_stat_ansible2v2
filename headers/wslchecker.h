@@ -68,6 +68,8 @@ private slots:
 private:
     void showWslInstallDialog();
     void installWsl();
+    void refreshAfterDistroInstall();
+    void periodicCheck();
     void showDistroInstallDialog();
     void installUbuntu();
     void showAnsibleInstallDialog();
@@ -77,7 +79,9 @@ private:
     void checkAnsiblePresence();
     void offerAnsibleInstallation();
     void installAnsibleInWSL();
-
+    QTimer* m_checkTimer;  // Таймер для периодической проверки
+    int m_checkAttempts;   // Количество попыток проверки
+    bool m_offerShown;
     QProcess *m_installProcess;
     QProcess *m_distroProcess;
     QProcess *m_ansibleProcess;

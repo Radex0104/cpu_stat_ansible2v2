@@ -26,6 +26,11 @@ WSLChecker::WSLChecker(QObject *parent) : QObject(parent)
     m_distroProcess = new QProcess(this);
     m_versionCheckProcess = new QProcess(this); // Процесс для проверки версии
     m_ansibleInstallProcess = new QProcess(this);
+    m_checkTimer = new QTimer(this);
+    m_checkTimer->setInterval(3000); // Проверка каждые 3 секунды
+    connect(m_checkTimer, &QTimer::timeout, this, &WSLChecker::periodicCheck);
+    m_checkAttempts = 0;
+    m_offerShown = false;
     
     connect(m_installProcess, SIGNAL(finished(int, QProcess::ExitStatus)),
             this, SLOT(onInstallProcessFinished(int, QProcess::ExitStatus)));
@@ -53,7 +58,7 @@ WSLChecker::WSLChecker(QObject *parent) : QObject(parent)
     connect(m_versionCheckProcess, SIGNAL(finished(int, QProcess::ExitStatus)),
             this, SLOT(onVersionCheckFinished(int, QProcess::ExitStatus)));
     
-    qDebug() << "WSLChecker created";
+    // // qDebug() << "WSLChecker created";
 }
 
 // Деструктор
@@ -80,13 +85,13 @@ WSLChecker::~WSLChecker()
         m_ansibleInstallProcess->terminate();
         m_ansibleInstallProcess->waitForFinished(1000);
     }
-    qDebug() << "WSLChecker destroyed";
+    // // qDebug() << "WSLChecker destroyed";
 }
 
 // Слот для вывода Ansible (обычный вывод)
 void WSLChecker::onAnsibleOutput()
 {
-    qDebug() << "onAnsibleOutput called";
+    // // qDebug() << "onAnsibleOutput called";
     
     if (m_ansibleDialog && m_ansibleOutput) {
         QByteArray output = m_ansibleProcess->readAllStandardOutput();
@@ -105,7 +110,7 @@ void WSLChecker::onAnsibleOutput()
 // Слот для ошибок Ansible
 void WSLChecker::onAnsibleError()
 {
-    qDebug() << "onAnsibleError called";
+    // // qDebug() << "onAnsibleError called";
     
     if (m_ansibleDialog && m_ansibleOutput) {
         QByteArray error = m_ansibleProcess->readAllStandardError();
@@ -160,9 +165,9 @@ void WSLChecker::onVersionCheckFinished(int exitCode, QProcess::ExitStatus exitS
     QString output = m_versionCheckProcess->readAllStandardOutput().trimmed();
     QString error = m_versionCheckProcess->readAllStandardError().trimmed();
     
-    qDebug() << "Version:" << output;
+    // // qDebug() << "Version:" << output;
     if (!error.isEmpty()) {
-        qDebug() << "Error:" << error;
+        // // qDebug() << "Error:" << error;
     }
     
     if (output.isEmpty() || output == "VERSION_ERROR" || output.contains("not found")) {
@@ -182,19 +187,46 @@ void WSLChecker::onVersionCheckFinished(int exitCode, QProcess::ExitStatus exitS
 // Предложение установить Ansible
 void WSLChecker::offerAnsibleInstallation()
 {
-    
-    if (!m_lastInfo.isInstalled || !m_lastInfo.hasDistributions) {
+    // Если предложение уже было показано, не показываем повторно
+    if (m_offerShown) {
+        qDebug() << "Offer already shown, skipping";
         return;
     }
     
+    // Обновляем информацию перед предложением
+    m_lastInfo = checkWSL();
+    
+    if (!m_lastInfo.isInstalled || !m_lastInfo.hasDistributions) {
+        // Нет дистрибутива - не предлагаем
+        return;
+    }
+    
+    // Проверяем Ansible
+    QProcess checkProcess;
+    checkProcess.start("wsl", QStringList() << "bash" << "-c" << "command -v ansible >/dev/null 2>&1 && echo 'INSTALLED' || echo 'NOT_INSTALLED'");
+    
+    if (!checkProcess.waitForFinished(5000)) {
+        return;
+    }
+    
+    QString output = checkProcess.readAllStandardOutput().trimmed();
+    
+    if (output == "INSTALLED") {
+        // Ansible уже установлен
+        m_lastInfo.ansibleInstalled = true;
+        return;
+    }
+    
+    // Устанавливаем флаг, что предложение будет показано
+    m_offerShown = true;
+    
+    // Предлагаем установить Ansible
     QWidget *parent = qobject_cast<QWidget*>(this->parent());
     
     QMessageBox msgBox(parent);
     msgBox.setWindowTitle("Ansible не найден");
     msgBox.setText("Ansible не установлен в вашем дистрибутиве WSL.");
-    msgBox.setInformativeText(
-        "Хотите установить Ansible сейчас?\n"
-    );
+    msgBox.setInformativeText("Хотите установить Ansible сейчас?");
     
     QPushButton *installButton = msgBox.addButton("Установить Ansible", QMessageBox::AcceptRole);
     QPushButton *laterButton = msgBox.addButton("Позже", QMessageBox::RejectRole);
@@ -204,6 +236,8 @@ void WSLChecker::offerAnsibleInstallation()
     if (msgBox.clickedButton() == installButton) {
         installAnsibleInWSL();
     } else {
+        // Пользователь отказался, флаг уже установлен, больше не предлагаем
+        qDebug() << "User declined Ansible installation";
     }
 }
 
@@ -214,25 +248,8 @@ void WSLChecker::installAnsibleInWSL()
     
     QMessageBox msgBox(parent);
     msgBox.setWindowTitle("Установка Ansible в WSL");
-    msgBox.setText("Ansible будет установлен автоматически.");
-    
-    QStringList commands = {
-        "apt update",
-        "apt install -y software-properties-common",
-        "add-apt-repository --yes --update ppa:ansible/ansible",
-        "apt install -y ansible",
-        "ansible --version"
-    };
-
-    QStringList commandDescriptions = {
-        "Обновление списка пакетов...",
-        "Установка дополнительных компонентов...",
-        "Добавление репозитория Ansible...",
-        "Установка Ansible...",
-        "Проверка версии Ansible..."
-    };
-
-    QString fullCommand = "sudo " + commands.join(" && sudo ");
+    msgBox.setText("Ansible будет установлен автоматически.\n\n"
+                   "Пароль sudo: 1111");
     
     QPushButton *installButton = msgBox.addButton("Установить", QMessageBox::AcceptRole);
     QPushButton *closeButton = msgBox.addButton("Закрыть", QMessageBox::RejectRole);
@@ -255,7 +272,7 @@ void WSLChecker::installAnsibleInWSL()
             layout->addWidget(m_installOutput);
             
             m_installProgressBar = new QProgressBar(m_installDialog);
-            m_installProgressBar->setRange(0, commands.size());
+            m_installProgressBar->setRange(0, 5);
             m_installProgressBar->setValue(0);
             layout->addWidget(m_installProgressBar);
             
@@ -267,9 +284,23 @@ void WSLChecker::installAnsibleInWSL()
         }
         
         m_installOutput->clear();
-        m_installProgressBar->setRange(0, 0);
+        m_installProgressBar->setValue(0);
         m_installCloseButton->setEnabled(false);
         m_installDialog->show();
+        
+        // Создаем скрипт для последовательной установки
+        QString script = 
+            "echo '=== 1. Обновление списка пакетов ==='\n"
+            "echo '1111' | sudo -S apt update\n"
+            "echo '=== 2. Установка дополнительных компонентов ==='\n"
+            "echo '1111' | sudo -S apt install -y software-properties-common\n"
+            "echo '=== 3. Добавление репозитория Ansible ==='\n"
+            "echo '1111' | sudo -S add-apt-repository --yes --update ppa:ansible/ansible\n"
+            "echo '=== 4. Установка Ansible ==='\n"
+            "echo '1111' | sudo -S apt install -y ansible\n"
+            "echo '=== 5. Проверка версии Ansible ==='\n"
+            "ansible --version\n"
+            "echo '=== Установка завершена ==='\n";
         
         // Настраиваем процесс на скрытый запуск
 #ifdef _WIN32
@@ -280,7 +311,8 @@ void WSLChecker::installAnsibleInWSL()
         });
 #endif
         
-        m_ansibleInstallProcess->start("wsl", QStringList() << "bash" << "-c" << fullCommand);
+        qDebug() << "Starting Ansible installation with password 1111";
+        m_ansibleInstallProcess->start("wsl", QStringList() << "bash" << "-c" << script);
     }
 }
 
@@ -292,57 +324,29 @@ void WSLChecker::onAnsibleInstallFinished(int exitCode, QProcess::ExitStatus exi
     if (m_installDialog) {
         if (exitCode == 0) {
             m_installOutput->append("\n✅ Ansible успешно установлен!");
-            m_installOutput->append("\nТеперь вы можете использовать команду 'ansible-playbook' в WSL.");
+            m_installProgressBar->setValue(5);
             
             QMessageBox::information(m_installDialog, "Успех", 
                 "Ansible был успешно установлен в WSL!");
             
             // Обновляем информацию об Ansible
             m_lastInfo.ansibleInstalled = true;
-            checkAnsibleVersionAsync(); // Проверяем версию
+            checkAnsibleVersionAsync();
             
         } else {
             QString error = m_ansibleInstallProcess->readAllStandardError();
             m_installOutput->append("\n❌ Установка не удалась с ошибкой:");
             m_installOutput->append(error);
             
-            // Анализируем ошибку
-            if (error.contains("sudo: a password is required") || 
-                error.contains("no tty present")) {
-                m_installOutput->append(
-                    "\n⚠️ Эта ошибка обычно означает, что sudo требует пароль.\n"
-                    "Сначала выполните 'sudo -v' в WSL для аутентификации, затем повторите попытку."
-                );
-                
-                QMessageBox::warning(m_installDialog, "Ошибка прав доступа", 
-                    "Установка не удалась из-за требований пароля sudo.\n\n"
-                    "Пожалуйста, откройте терминал WSL и выполните 'sudo -v' сначала,\n"
-                    "затем повторите установку Ansible.");
-            } 
-            else if (error.contains("Could not get lock") || error.contains("Unable to lock")) {
-                m_installOutput->append(
-                    "\n⚠️ Другой менеджер пакетов уже запущен.\n"
-                    "Пожалуйста, закройте другие менеджеры пакетов и повторите попытку."
-                );
-                
-                QMessageBox::warning(m_installDialog, "Ошибка блокировки", 
-                    "Другой менеджер пакетов уже запущен.\n"
-                    "Пожалуйста, закройте все другие менеджеры пакетов и повторите попытку.");
-            }
-            else {
-                QMessageBox::warning(m_installDialog, "Ошибка установки", 
-                    "Не удалось установить Ansible в WSL.\n\n" + error);
-            }
+            QMessageBox::warning(m_installDialog, "Ошибка установки", 
+                "Не удалось установить Ansible в WSL.\n\n" + error);
         }
         
         m_installCloseButton->setEnabled(true);
-        m_installProgressBar->setRange(0, 100);
-        m_installProgressBar->setValue(100);
     }
     
     emit ansibleInstallFinished(exitCode == 0);
 }
-
 // Проверка наличия WSL и дистрибутивов
 WSLChecker::WSLInfo WSLChecker::checkWSL()
 {
@@ -357,37 +361,69 @@ WSLChecker::WSLInfo WSLChecker::checkWSL()
         if (!whichOutput.isEmpty()) {
             info.isInstalled = true;
             
-            // Пытаемся получить список установленных дистрибутивов через cmd
-            QProcess cmdProcess;
-            cmdProcess.start("cmd.exe", QStringList() << "/c" << "wsl --list --quiet");
+            // Получаем список дистрибутивов через wsl -l -v
+            QProcess listProcess;
+            listProcess.start("wsl", QStringList() << "-l" << "-v");
             
-            if (cmdProcess.waitForFinished(3000)) {
-            QByteArray rawOutput = cmdProcess.readAllStandardOutput();
-            
-            // Вывод в UTF-16LE (каждый символ - 2 байта)
-            QString line;
-            
-            // Пробуем декодировать как UTF-16LE
-            if (rawOutput.size() > 1) 
-                line = QString::fromUtf16(reinterpret_cast<const ushort*>(rawOutput.constData()), rawOutput.size() / 2);
-
-                    qDebug() << "Found distro:" << line;
-        }
-            
-            // Если всё равно не нашли дистрибутивы, но WSL установлен - используем Ubuntu по умолчанию
-            if (info.distributions.isEmpty()) {
-                info.distributions.append("Ubuntu");
-                qDebug() << "Using default distro: Ubuntu";
-            }
-            
-            if (!info.distributions.isEmpty()) {
-                info.hasDistributions = true;
-                info.defaultDistribution = info.distributions.first();
+            if (listProcess.waitForFinished(5000)) {
+                QByteArray rawOutput = listProcess.readAllStandardOutput();
                 
-                // Только теперь проверяем Ansible, так как есть дистрибутивы
-                QTimer::singleShot(100, this, &WSLChecker::checkAnsibleVersionAsync);
+                // Конвертируем UTF-16LE в QString
+                QString output;
+                if (rawOutput.size() > 1) {
+                    // Пробуем декодировать как UTF-16LE (Windows WSL вывод)
+                    output = QString::fromUtf16(reinterpret_cast<const ushort*>(rawOutput.constData()), rawOutput.size() / 2);
+                } else {
+                    // Fallback на local8Bit
+                    output = QString::fromLocal8Bit(rawOutput);
+                }
                 
+                qDebug() << "WSL list output (decoded):" << output;
+                
+                // Проверяем наличие дистрибутивов в выводе
+                // Ожидаемый формат:
+                //   NAME      STATE           VERSION
+                // * Ubuntu    Running         2
+                if (output.contains("Ubuntu", Qt::CaseInsensitive) || 
+                    output.contains("Debian", Qt::CaseInsensitive) ||
+                    output.contains("Running", Qt::CaseInsensitive) ||
+                    output.contains("Stopped", Qt::CaseInsensitive)) {
+                    
+                    info.hasDistributions = true;
+                    
+                    // Извлекаем имя дистрибутива
+                    QStringList lines = output.split('\n');
+                    for (const QString& line : lines) {
+                        // Ищем строку с именем дистрибутива
+                        if (line.contains("Ubuntu", Qt::CaseInsensitive)) {
+                            info.distributions.append("Ubuntu");
+                            info.defaultDistribution = "Ubuntu";
+                            break;
+                        } else if (line.contains("Debian", Qt::CaseInsensitive)) {
+                            info.distributions.append("Debian");
+                            info.defaultDistribution = "Debian";
+                            break;
+                        }
+                    }
+                    
+                    // Если не нашли конкретное имя, но дистрибутив есть
+                    if (info.distributions.isEmpty() && 
+                        (output.contains("Running") || output.contains("Stopped"))) {
+                        info.distributions.append("Linux");
+                        info.defaultDistribution = "Linux";
+                    }
+                    
+                    // Только если есть дистрибутивы, проверяем Ansible
+                    QTimer::singleShot(100, this, &WSLChecker::checkAnsibleVersionAsync);
+                } else {
+                    info.hasDistributions = false;
+                    info.defaultDistribution = "Ubuntu";
+                    info.ansibleInstalled = false;
+                    info.ansibleVersion = QString();
+                    qDebug() << "No distributions found in output";
+                }
             } else {
+                qDebug() << "Failed to get distribution list";
                 info.hasDistributions = false;
                 info.defaultDistribution = "Ubuntu";
                 info.ansibleInstalled = false;
@@ -427,9 +463,9 @@ void WSLChecker::checkAnsibleVersionAsync()
     
     // Дополнительная проверка с обновлением m_lastInfo
     if (!m_lastInfo.isInstalled || !m_lastInfo.hasDistributions) {
-        qDebug() << "  isInstalled:" << m_lastInfo.isInstalled;
-        qDebug() << "  hasDistributions:" << m_lastInfo.hasDistributions;
-        qDebug() << "  distributions:" << m_lastInfo.distributions;
+        // // qDebug() << "  isInstalled:" << m_lastInfo.isInstalled;
+        // // qDebug() << "  hasDistributions:" << m_lastInfo.hasDistributions;
+        // // qDebug() << "  distributions:" << m_lastInfo.distributions;
         
         m_lastInfo.ansibleInstalled = false;
         m_lastInfo.ansibleVersion = QString();
@@ -575,8 +611,13 @@ QString WSLChecker::getAnsibleVersion()
 // Показать диалог настройки WSL
 void WSLChecker::showWslSetupDialog()
 {
+    // Обновляем информацию
+    m_lastInfo = checkWSL();
+    
+    qDebug() << "showWslSetupDialog called";
     qDebug() << "  isInstalled:" << m_lastInfo.isInstalled;
     qDebug() << "  hasDistributions:" << m_lastInfo.hasDistributions;
+    qDebug() << "  ansibleInstalled:" << m_lastInfo.ansibleInstalled;
     
     if (!m_lastInfo.isInstalled) {
         // Случай 1: WSL не установлен
@@ -584,12 +625,12 @@ void WSLChecker::showWslSetupDialog()
     } else if (!m_lastInfo.hasDistributions) {
         // Случай 2: WSL установлен, но нет дистрибутивов
         showDistroInstallDialog();
+    } else if (!m_lastInfo.ansibleInstalled && !m_offerShown) {
+        // Случай 3: WSL и дистрибутив есть, но Ansible не установлен и предложение не показано
+        offerAnsibleInstallation();
     } else {
-        // Случай 3: WSL установлен с дистрибутивами        
-        // Если Ansible не установлен, предлагаем установить
-        if (!m_lastInfo.ansibleInstalled) {
-            QTimer::singleShot(100, this, &WSLChecker::offerAnsibleInstallation);
-        }
+        // Всё установлено или предложение уже показано
+        qDebug() << "WSL, distro and Ansible are all installed or offer already shown";
     }
 }
 
@@ -619,55 +660,62 @@ void WSLChecker::showDistroInstallDialog()
 // Установка дистрибутива Ubuntu
 void WSLChecker::installUbuntu()
 {
-    
     QWidget *parent = qobject_cast<QWidget*>(this->parent());
     
-    // Создаем диалог для отображения прогресса установки
-    QDialog *progressDialog = new QDialog(parent);
-    progressDialog->setWindowTitle("Установка Ubuntu");
-    progressDialog->setMinimumWidth(500);
-    progressDialog->setMinimumHeight(300);
+    QMessageBox msgBox(parent);
+    msgBox.setWindowTitle("Установка Ubuntu");
+    msgBox.setText("Установка Ubuntu будет запущена.\n\n"
+                   "После установки в отдельном окне введите:\n"
+                   "• Имя пользователя: ubuntu\n"
+                   "• Пароль: 1111\n"
+                   "• Подтверждение пароля: 1111\n\n"
+                   "Установка будет автоматически обнаружена.");
     
-    QVBoxLayout *layout = new QVBoxLayout(progressDialog);
+    QPushButton *installButton = msgBox.addButton("Установить", QMessageBox::AcceptRole);
+    QPushButton *cancelButton = msgBox.addButton("Отмена", QMessageBox::RejectRole);
     
-    QLabel *titleLabel = new QLabel("<b>Установка Ubuntu в WSL</b>", progressDialog);
-    titleLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(titleLabel);
+    msgBox.exec();
     
-    QLabel *infoLabel = new QLabel("Это может занять несколько минут. Пожалуйста, подождите...", progressDialog);
-    infoLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(infoLabel);
-    
-    QTextEdit *outputText = new QTextEdit(progressDialog);
-    outputText->setReadOnly(true);
-    outputText->setFontFamily("Courier New");
-    outputText->setMaximumHeight(200);
-    layout->addWidget(outputText);
-    
-    QProgressBar *progressBar = new QProgressBar(progressDialog);
-    progressBar->setRange(0, 0); // Неопределенный прогресс
-    layout->addWidget(progressBar);
-    
-    QPushButton *closeButton = new QPushButton("Закрыть", progressDialog);
-    closeButton->setEnabled(false);
-    layout->addWidget(closeButton);
-    
-    // Сохраняем указатели для использования в слотах
-    m_distroDialog = progressDialog;
-    m_distroOutput = outputText;
-    m_distroCloseButton = closeButton;
-    m_distroProgressBar = progressBar;
-    
-    // Подключаем кнопку закрытия
-    connect(closeButton, &QPushButton::clicked, progressDialog, &QDialog::accept);
-    
-    progressDialog->show();
-    
-    // Устанавливаем дистрибутив Ubuntu
-    QStringList args;
-    args << "--install" << "-d" << "Ubuntu";
-    
-    m_distroProcess->start("wsl", args);
+    if (msgBox.clickedButton() == installButton) {
+        // Запускаем установку
+        m_distroProcess->start("wsl", QStringList() << "--install" << "-d" << "Ubuntu");
+        
+        // Показываем диалог ожидания
+        QDialog *waitDialog = new QDialog(parent);
+        waitDialog->setWindowTitle("Установка Ubuntu");
+        waitDialog->setMinimumWidth(400);
+        
+        QVBoxLayout *layout = new QVBoxLayout(waitDialog);
+        
+        QLabel *label = new QLabel("Установка Ubuntu выполняется...\n\n"
+                                   "Пожалуйста, дождитесь завершения установки\n"
+                                   "и введите учетные данные в открывшемся окне.\n\n"
+                                   "После завершения установка Ansible будет предложена автоматически.");
+        label->setAlignment(Qt::AlignCenter);
+        layout->addWidget(label);
+        
+        QProgressBar *progressBar = new QProgressBar(waitDialog);
+        progressBar->setRange(0, 0);
+        layout->addWidget(progressBar);
+        
+        QPushButton *hideButton = new QPushButton("Скрыть", waitDialog);
+        layout->addWidget(hideButton);
+        
+        connect(hideButton, &QPushButton::clicked, waitDialog, &QDialog::accept);
+        
+        waitDialog->show();
+        
+        // Запускаем периодическую проверку установки
+        m_checkAttempts = 0;
+        m_checkTimer->start();
+        
+        // Таймер для закрытия диалога после обнаружения установки
+        connect(m_checkTimer, &QTimer::timeout, this, [waitDialog]() {
+            if (waitDialog && waitDialog->isVisible()) {
+                // Не закрываем сразу, даем время на ввод пароля
+            }
+        });
+    }
 }
 
 // Слот завершения установки дистрибутива
@@ -675,17 +723,22 @@ void WSLChecker::onDistroInstallFinished(int exitCode, QProcess::ExitStatus exit
 {
     Q_UNUSED(exitStatus)
     
-    
     if (m_distroDialog) {
         if (exitCode == 0) {
             m_distroOutput->append("\n✅ Ubuntu успешно установлен!");
-            checkWSL();
-            // Спрашиваем об установке Ansible
-            if (!m_lastInfo.hasDistributions) {
-                QTimer::singleShot(1000, this, [this]() {
-                    installAnsibleInWSL();
-                });
-            }
+            m_distroOutput->append("\n⏳ Выполняется настройка...");
+            m_checkAttempts = 0;
+            m_checkTimer->start();
+            // Ждем инициализации дистрибутива
+            QTimer::singleShot(3000, this, [this]() {
+                // Обновляем статус WSL
+                m_lastInfo.hasDistributions = true;
+                m_lastInfo.distributions.append("Ubuntu");
+                m_lastInfo.defaultDistribution = "Ubuntu";
+                
+                m_distroOutput->append("\n✅ Дистрибутив готов к использованию!");
+            });
+            
         } else {
             QString error = m_distroProcess->readAllStandardError();
             m_distroOutput->append("\n❌ Установка не удалась с ошибкой:");
@@ -772,18 +825,66 @@ void WSLChecker::onInstallProcessFinished(int exitCode, QProcess::ExitStatus exi
 {
     Q_UNUSED(exitStatus)
     
-    
     QWidget *parent = qobject_cast<QWidget*>(this->parent());
     
     if (exitCode == 0) {
-        
         QMessageBox::information(parent, "Установка WSL завершена", 
-            "WSL успешно установлен! Пожалуйста, перезагрузите компьютер и запустите программу повторно, если будут проблемы.\n");
+            "WSL успешно установлен! Теперь необходимо установить дистрибутив Linux.");
+        
+        // После установки WSL предлагаем установить дистрибутив
+        QTimer::singleShot(500, this, &WSLChecker::showDistroInstallDialog);
+        
         emit wslSetupFinished(true);
     } else {
         QString error = m_installProcess->readAllStandardError();
         QMessageBox::warning(parent, "Ошибка установки WSL", 
             "Не удалось установить WSL.\n\n" + error);
         emit wslSetupFinished(false);
+    }
+}
+
+void WSLChecker::refreshAfterDistroInstall()
+{
+    // // qDebug() << "Refreshing after distro install";
+    
+    // Повторно проверяем WSL
+    checkWSL();
+    
+    // Если есть дистрибутивы, проверяем Ansible
+    if (m_lastInfo.hasDistributions) {
+        QTimer::singleShot(500, this, &WSLChecker::checkAnsibleVersionAsync);
+        
+        // Через секунду предлагаем установить Ansible, если не установлен
+        QTimer::singleShot(2000, this, [this]() {
+            if (!m_lastInfo.ansibleInstalled) {
+                offerAnsibleInstallation();
+            }
+        });
+    }
+}
+
+void WSLChecker::periodicCheck()
+{
+    m_checkAttempts++;
+    
+    qDebug() << "Periodic check attempt" << m_checkAttempts;
+    
+    WSLInfo info = checkWSL();
+    
+    if (info.hasDistributions) {
+        // Дистрибутив установлен, останавливаем проверку
+        m_checkTimer->stop();
+        
+        // Обновляем информацию
+        m_lastInfo = info;
+        
+        // Предлагаем установить Ansible только если он не установлен и предложение не было показано
+        if (!info.ansibleInstalled && !m_offerShown) {
+            QTimer::singleShot(500, this, &WSLChecker::offerAnsibleInstallation);
+        }
+    } else if (m_checkAttempts > 30) {
+        // После 30 попыток (90 секунд) останавливаем проверку
+        m_checkTimer->stop();
+        qDebug() << "Stop checking - timeout";
     }
 }

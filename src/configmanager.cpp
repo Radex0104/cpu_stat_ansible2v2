@@ -37,7 +37,7 @@ void ConfigManager::saveConfiguration(const QList<HostConfig>& hosts, const QStr
     settings.setValue("default_ssh_user", defaultUser);
 
     settings.sync();
-    qDebug() << "Конфигурация сохранена. Хостов:" << hosts.size();
+    // // qDebug() << "Конфигурация сохранена. Хостов:" << hosts.size();
 }
 
 void ConfigManager::loadConfiguration(QList<HostConfig>& hosts, QString& defaultUser)
@@ -70,5 +70,5 @@ void ConfigManager::loadConfiguration(QList<HostConfig>& hosts, QString& default
         hosts.append(hostConfig);
     }
 
-    qDebug() << "Конфигурация загружена. Хостов:" << hosts.size();
+    // // qDebug() << "Конфигурация загружена. Хостов:" << hosts.size();
 }

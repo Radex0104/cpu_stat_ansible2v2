@@ -16,7 +16,7 @@ AnsibleRunner::AnsibleRunner(QObject *parent)
     , jmeterRemoteTestDir("/opt/jmeter_tests")
     , jmeterResultsRemoteDir("/tmp/jmeter_results")
     , jmeterResultsLocalDir("./jmeter_results")
-    , jmeterTestDuration(60)  // <-- ДОБАВЬТЕ ЭТУ СТРОКУ
+    , jmeterTestDuration(300)  // <-- ДОБАВЬТЕ ЭТУ СТРОКУ
 {
     ansibleProcess = new QProcess(this);
 
@@ -27,7 +27,7 @@ AnsibleRunner::AnsibleRunner(QObject *parent)
     connect(ansibleProcess, &QProcess::readyReadStandardError, this, &AnsibleRunner::readProcessOutput);
 
     inventoryPath = QCoreApplication::applicationDirPath() + "/inventory.ini";
-    qDebug() << inventoryPath;
+    // // qDebug() << inventoryPath;
     
     // Предопределенные задачи Ansible
     m_taskNames = QStringList() 
@@ -105,9 +105,9 @@ void AnsibleRunner::createInventoryFile()
         // ВАЖНО: Добавляем JMeter host в inventory
         if (!jmeterHost.isEmpty()) {
             stream << "jmeter_host=" << jmeterHost << "\n";
-            qDebug() << "JMeter host set to:" << jmeterHost;
+            // // qDebug() << "JMeter host set to:" << jmeterHost;
         } else {
-            qDebug() << "WARNING: JMeter host is empty!";
+            // // qDebug() << "WARNING: JMeter host is empty!";
         }
         
         // Добавляем другие переменные JMeter
@@ -159,27 +159,27 @@ void AnsibleRunner::executePlaybook()
     // Берем значения из переменных класса (которые должны быть установлены из настроек)
     if (!jmeterHost.isEmpty()) {
         extraVars["jmeter_host"] = jmeterHost;
-        qDebug() << "Setting jmeter_host:" << jmeterHost;
+        // // qDebug() << "Setting jmeter_host:" << jmeterHost;
     }
     if (!jmeterArchiveSrc.isEmpty()) {
         extraVars["jmeter_archive_src"] = convertToWslPath(jmeterArchiveSrc);
-        qDebug() << "Setting jmeter_archive_src:" << jmeterArchiveSrc;
+        // // qDebug() << "Setting jmeter_archive_src:" << jmeterArchiveSrc;
     }
     if (!jmeterRemoteTestDir.isEmpty()) {
         extraVars["jmeter_remote_test_dir"] = jmeterRemoteTestDir;
-        qDebug() << "Setting jmeter_remote_test_dir:" << jmeterRemoteTestDir;
+        // // qDebug() << "Setting jmeter_remote_test_dir:" << jmeterRemoteTestDir;
     }
     if (!jmeterResultsRemoteDir.isEmpty()) {
         extraVars["jmeter_results_remote_dir"] = jmeterResultsRemoteDir;
-        qDebug() << "Setting jmeter_results_remote_dir:" << jmeterResultsRemoteDir;
+        // // qDebug() << "Setting jmeter_results_remote_dir:" << jmeterResultsRemoteDir;
     }
     if (!jmeterResultsLocalDir.isEmpty()) {
         extraVars["jmeter_results_local_dir"] = jmeterResultsLocalDir;
-        qDebug() << "Setting jmeter_results_local_dir:" << jmeterResultsLocalDir;
+        // // qDebug() << "Setting jmeter_results_local_dir:" << jmeterResultsLocalDir;
     }
     if (jmeterTestDuration > 0) {
         extraVars["test_duration"] = QString::number(jmeterTestDuration);
-        qDebug() << "Setting test_duration:" << jmeterTestDuration;
+        // // qDebug() << "Setting test_duration:" << jmeterTestDuration;
     }
     
     // Добавляем все переменные в аргументы командной строки
@@ -201,7 +201,7 @@ bool AnsibleRunner::updateArchivePathInPlaybook(const QString& playbookPath, con
     if (archivePath.isEmpty()) return false;
 
     QFile playbookFile(playbookPath);
-    qDebug() << "Updating archive path in:" << playbookPath;
+    // // qDebug() << "Updating archive path in:" << playbookPath;
     
     if (!playbookFile.exists()) {
         emit errorOccurred("Файл ansible.yml не найден в папке проекта!");
@@ -217,7 +217,7 @@ bool AnsibleRunner::updateArchivePathInPlaybook(const QString& playbookPath, con
     playbookFile.close();
 
     QString wslArchivePath = convertToWslPath(archivePath);
-    qDebug() << "WSL archive path:" << wslArchivePath;
+    // // qDebug() << "WSL archive path:" << wslArchivePath;
     
     QStringList lines = content.split("\n");
     bool found = false;
@@ -226,13 +226,13 @@ bool AnsibleRunner::updateArchivePathInPlaybook(const QString& playbookPath, con
         if (lines[i].contains("archive_src:")) {
             lines[i] = QString("    archive_src: \"%1\"").arg(wslArchivePath);
             found = true;
-            qDebug() << "Found and updated archive_src at line" << i;
+            // // qDebug() << "Found and updated archive_src at line" << i;
             break;
         }
     }
     
     if (!found) {
-        qDebug() << "Warning: archive_src not found in playbook";
+        // // qDebug() << "Warning: archive_src not found in playbook";
         // Можно добавить новую строку после script_src
         for (int i = 0; i < lines.size(); ++i) {
             if (lines[i].contains("vars:")) {
@@ -280,11 +280,11 @@ bool AnsibleRunner::filesFinder(const QString& filePath, QString* archivePath)
         if (!archives.isEmpty()) {
             *archivePath = dir.absoluteFilePath(archives.first());
             emit outputReceived("📦 Найден архив: " + archives.first());
-            qDebug() << "Archive found:" << *archivePath;
+            // // qDebug() << "Archive found:" << *archivePath;
         } else {
             *archivePath = QString();
             emit outputReceived("⚠️ Архивы не найдены в: " + searchDir);
-            qDebug() << "No archives found in:" << searchDir;
+            // // qDebug() << "No archives found in:" << searchDir;
         }
     }
 

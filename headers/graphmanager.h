@@ -267,7 +267,7 @@ private:
         
         if (maxValue > 0) {
             m_axisY->setRange(0, maxValue * 1.1);
-            qDebug() << "Y axis recalculated, new max:" << maxValue;
+            // // qDebug() << "Y axis recalculated, new max:" << maxValue;
         }
     }
 };

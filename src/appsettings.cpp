@@ -69,7 +69,7 @@ void AppSettings::setPrometheusHost(const QString& host)
         m_prometheusHost = host;
         saveToFile();
         emit prometheusHostChanged(host);
-        qDebug() << "Prometheus host changed to:" << host;
+        // // qDebug() << "Prometheus host changed to:" << host;
     }
 }
 
@@ -90,7 +90,7 @@ void AppSettings::setTestDuration(int seconds)
         m_testDuration = seconds;
         saveToFile();
         emit jmeterSettingsChanged();
-        qDebug() << "Test duration changed to:" << seconds << "seconds";
+        // // qDebug() << "Test duration changed to:" << seconds << "seconds";
     }
 }
 
@@ -105,7 +105,7 @@ void AppSettings::setLocalArchivePath(const QString& path)
         m_localArchivePath = path;
         saveToFile();
         emit jmeterSettingsChanged();
-        qDebug() << "Local archive path changed to:" << path;
+        // // qDebug() << "Local archive path changed to:" << path;
     }
 }
 
@@ -205,7 +205,7 @@ void AppSettings::setJmeterHost(const QString& host)
         m_jmeterHost = host;
         saveToFile();
         emit jmeterSettingsChanged();
-        qDebug() << "JMeter host changed to:" << host;
+        // // qDebug() << "JMeter host changed to:" << host;
     }
 }
 
@@ -263,10 +263,10 @@ void AppSettings::loadFromFile()
     // Ansible
     m_ansiblePlaybookPath = settings.value("ansible/playbook_path", m_ansiblePlaybookPath).toString();
     m_defaultSshUser = settings.value("ansible/default_ssh_user", m_defaultSshUser).toString();
-    qDebug() << "Loaded local_archive_path:" << m_localArchivePath;  // <-- ДОБАВИТЬ
-    qDebug() << "Loaded jmeter_host:" << m_jmeterHost;  // <-- ДОБАВИТЬ
-    qDebug() << "Loaded test_duration:" << m_testDuration;
-    qDebug() << "Settings loaded from:" << filePath;
+    // // qDebug() << "Loaded local_archive_path:" << m_localArchivePath;  // <-- ДОБАВИТЬ
+    // // qDebug() << "Loaded jmeter_host:" << m_jmeterHost;  // <-- ДОБАВИТЬ
+    // // qDebug() << "Loaded test_duration:" << m_testDuration;
+    // // qDebug() << "Settings loaded from:" << filePath;
 }
 
 void AppSettings::saveToFile() const
@@ -296,7 +296,7 @@ void AppSettings::saveToFile() const
     settings.setValue("ansible/default_ssh_user", m_defaultSshUser);
     
     settings.sync();
-    qDebug() << "Settings saved to:" << filePath;
+    // // qDebug() << "Settings saved to:" << filePath;
 }
 
 // ==================== SettingsDialog ====================
