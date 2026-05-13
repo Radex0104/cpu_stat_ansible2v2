@@ -112,11 +112,6 @@ void MainWindow::checkWSLAndShowStatus()
     // Выполняем синхронную проверку
     WSLChecker::WSLInfo info = checker->checkWSL();
     
-    qDebug() << "  isInstalled:" << info.isInstalled;
-    qDebug() << "  hasDistributions:" << info.hasDistributions;
-    qDebug() << "  errorMessage:" << info.errorMessage;
-    qDebug() << "  distributions:" << info.distributions;
-    
     if (info.isInstalled) {
         if (info.hasDistributions) {
             QString status = "WSL готов: " + info.distributions.join(", ");

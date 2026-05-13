@@ -325,39 +325,87 @@
       become: yes
       when: jmeter_host is defined
 
-  # УСТАНОВКА СВЕЖЕЙ ВЕРСИИ JMETER
-    - name: Install latest JMeter on JMeter host
+  # # УСТАНОВКА СВЕЖЕЙ ВЕРСИИ JMETER
+  #   - name: Install latest JMeter on JMeter host
+  #     raw: |
+  #       echo "=== Installing JMeter 5.6.3 on {{ jmeter_host }} ==="
+        
+  #       # Удаляем старую версию
+  #       sudo apt-get remove -y jmeter || true
+        
+  #       # Устанавливаем Java
+  #       if ! command -v java >/dev/null 2>&1; then
+  #         sudo apt-get update
+  #         sudo apt-get install -y openjdk-11-jre-headless
+  #       fi
+        
+  #       # Скачиваем JMeter
+  #       cd /tmp
+  #       if [ ! -f apache-jmeter-5.6.3.tgz ]; then
+  #         wget -q --show-progress https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz
+  #       fi
+        
+  #       tar -xzf apache-jmeter-5.6.3.tgz
+  #       sudo mv apache-jmeter-5.6.3 /opt/jmeter
+  #       sudo ln -sf /opt/jmeter/bin/jmeter /usr/local/bin/jmeter
+        
+  #       echo "✅ JMeter 5.6.3 installed successfully"
+  #       /usr/local/bin/jmeter --version 2>&1 | head -3
+  #     delegate_to: "{{ jmeter_host }}"
+  #     run_once: true
+  #     become: yes
+  #     when: jmeter_host is defined
+
+# УСТАНОВКА NODE_EXPORTER НА ВСЕ ХОСТЫ
+    - name: Install node_exporter on all hosts
       raw: |
-        echo "=== Installing JMeter 5.6.3 on {{ jmeter_host }} ==="
+        echo "=== Installing node_exporter on {{ inventory_hostname }} ==="
         
-        # Удаляем старую версию
-        sudo apt-get remove -y jmeter || true
-        
-        # Устанавливаем Java
-        if ! command -v java >/dev/null 2>&1; then
-          sudo apt-get update
-          sudo apt-get install -y openjdk-11-jre-headless
-        fi
-        
-        # Скачиваем JMeter
+        # Скачиваем node_exporter
         cd /tmp
-        if [ ! -f apache-jmeter-5.6.3.tgz ]; then
-          wget -q --show-progress https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz
+        wget -q https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz
+        tar -xzf node_exporter-1.7.0.linux-amd64.tar.gz
+        
+        # Устанавливаем
+        sudo mv node_exporter-1.7.0.linux-amd64/node_exporter /usr/local/bin/
+        sudo chmod +x /usr/local/bin/node_exporter
+        
+        # Создаем пользователя для node_exporter
+        sudo useradd -rs /bin/false node_exporter || true
+        
+        # Создаем systemd сервис
+        sudo tee /etc/systemd/system/node_exporter.service > /dev/null << EOF
+        [Unit]
+        Description=Node Exporter
+        After=network.target
+        
+        [Service]
+        User=node_exporter
+        Group=node_exporter
+        Type=simple
+        ExecStart=/usr/local/bin/node_exporter
+        
+        [Install]
+        WantedBy=multi-user.target
+        EOF
+        
+        # Запускаем сервис
+        sudo systemctl daemon-reload
+        sudo systemctl enable node_exporter
+        sudo systemctl start node_exporter
+        
+        sleep 2
+        if systemctl is-active --quiet node_exporter; then
+          echo "✅ node_exporter started on {{ inventory_hostname }}, listening on port 9100"
+        else
+          echo "❌ Failed to start node_exporter on {{ inventory_hostname }}"
+          exit 1
         fi
-        
-        tar -xzf apache-jmeter-5.6.3.tgz
-        sudo mv apache-jmeter-5.6.3 /opt/jmeter
-        sudo ln -sf /opt/jmeter/bin/jmeter /usr/local/bin/jmeter
-        
-        echo "✅ JMeter 5.6.3 installed successfully"
-        /usr/local/bin/jmeter --version 2>&1 | head -3
-      delegate_to: "{{ jmeter_host }}"
-      run_once: true
       become: yes
-      when: jmeter_host is defined
+      register: node_exporter_install
 
      # ЗАПУСК JMETER ТЕСТА С ОТОБРАЖЕНИЕМ ПРОГРЕССА
-    - name: Run JMeter test with progress display
+    - name: Run JMeter test
       raw: |
         EXTRACT_DIR="{{ jmeter_remote_test_dir | default('/opt/jmeter_tests') }}"
         JMX_FILE=$(find "$EXTRACT_DIR" -name "*.jmx" -type f | head -1)

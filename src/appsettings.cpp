@@ -265,7 +265,7 @@ void AppSettings::loadFromFile()
     m_defaultSshUser = settings.value("ansible/default_ssh_user", m_defaultSshUser).toString();
     qDebug() << "Loaded local_archive_path:" << m_localArchivePath;  // <-- ДОБАВИТЬ
     qDebug() << "Loaded jmeter_host:" << m_jmeterHost;  // <-- ДОБАВИТЬ
-    qDebug() << "Loaded test_duration:" << m_testDuration;  // <-- ДОБ
+    qDebug() << "Loaded test_duration:" << m_testDuration;
     qDebug() << "Settings loaded from:" << filePath;
 }
 

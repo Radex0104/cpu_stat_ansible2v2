@@ -79,7 +79,7 @@ void GraphManager::buildPrometheusChart(QtCharts::QChartView* chartView, const Q
     QDateTime now = QDateTime::currentDateTime();
 
 // Вычисляем время час назад
-QDateTime oneHourAgo = now.addSecs(-3600); // -3600 секунд = -1 час
+QDateTime oneHourAgo = now.addSecs(-10800); // -3600 секунд = -1 час
 
 // Форматируем в нужный формат
 QString dateStart = oneHourAgo.toString("yyyy-MM-dd HH:mm:ss");
@@ -101,51 +101,51 @@ QString dateEnd = now.toString("yyyy-MM-dd HH:mm:ss");
     if (response.isEmpty()) {
         qDebug() << "Failed to get data from Prometheus, falling back to file...";
         
-        // Определяем имя тестового файла
-        QString testFileName;
-        if (query.contains("avg(jmeter_rt_summary)", Qt::CaseInsensitive)) {
-            testFileName = "data_response_time.json";
-        } else if (query.contains("by (label)", Qt::CaseInsensitive) && query.contains("rate(", Qt::CaseInsensitive)) {
-            testFileName = "data_rps_by_endpoint.json";
-        } else if (query.contains("rate(", Qt::CaseInsensitive)) {
-            testFileName = "data_rps_total.json";
-        } else if (isCPUQuery) {
-            testFileName = "data_cpu.json";
-        } else if (isMemoryQuery) {
-            testFileName = "data_memory.json";
-        } else {
-            testFileName = "data_response_time.json";
-        }
+        // // Определяем имя тестового файла
+        // QString testFileName;
+        // if (query.contains("avg(jmeter_rt_summary)", Qt::CaseInsensitive)) {
+        //     testFileName = "data_response_time.json";
+        // } else if (query.contains("by (label)", Qt::CaseInsensitive) && query.contains("rate(", Qt::CaseInsensitive)) {
+        //     testFileName = "data_rps_by_endpoint.json";
+        // } else if (query.contains("rate(", Qt::CaseInsensitive)) {
+        //     testFileName = "data_rps_total.json";
+        // } else if (isCPUQuery) {
+        //     testFileName = "data_cpu.json";
+        // } else if (isMemoryQuery) {
+        //     testFileName = "data_memory.json";
+        // } else {
+        //     testFileName = "data_response_time.json";
+        // }
         
-        qDebug() << "Looking for test file:" << testFileName;
+        // qDebug() << "Looking for test file:" << testFileName;
         
-        QFile file(testFileName);
-        if (!file.exists()) {
-            // Пробуем с ../ если не нашли в текущей папке
-            testFileName = "../" + testFileName;
-            file.setFileName(testFileName);
-        }
-        if (!file.exists()) {
-            testFileName = "../../" + testFileName;
-            file.setFileName(testFileName);
-        }
+        // QFile file(testFileName);
+        // if (!file.exists()) {
+        //     // Пробуем с ../ если не нашли в текущей папке
+        //     testFileName = "../" + testFileName;
+        //     file.setFileName(testFileName);
+        // }
+        // if (!file.exists()) {
+        //     testFileName = "../../" + testFileName;
+        //     file.setFileName(testFileName);
+        // }
         
-        if (!file.exists()) {
-            qDebug() << "Test file not found:" << testFileName;
-            return;
-        }
+        // if (!file.exists()) {
+        //     qDebug() << "Test file not found:" << testFileName;
+        //     return;
+        // }
         
-        if (!file.open(QIODevice::ReadOnly)) {
-            qDebug() << "Failed to open file:" << file.errorString();
-            return;
-        }
+        // if (!file.open(QIODevice::ReadOnly)) {
+        //     qDebug() << "Failed to open file:" << file.errorString();
+        //     return;
+        // }
         
-        QByteArray data = file.readAll();
-        QJsonDocument doc = QJsonDocument::fromJson(data);
-        response = doc.object();
-        file.close();
+        // QByteArray data = file.readAll();
+        // QJsonDocument doc = QJsonDocument::fromJson(data);
+        // response = doc.object();
+        // file.close();
         
-        qDebug() << "Loaded test data from:" << testFileName;
+        // qDebug() << "Loaded test data from:" << testFileName;
     } else {
         qDebug() << "Successfully got data from Prometheus";
         
@@ -183,14 +183,7 @@ QString dateEnd = now.toString("yyyy-MM-dd HH:mm:ss");
             
             QString label = metric.contains("label") ? metric["label"].toString() : "unknown";
             QString code = metric.contains("code") ? metric["code"].toString() : "";
-            
-            // Фильтрация
-            // if (label.contains("Transaction", Qt::CaseInsensitive) || 
-            //     label.contains("Debug", Qt::CaseInsensitive) || 
-            //     label.contains("complex", Qt::CaseInsensitive)) {
-            //     continue;
-            // }
-            
+
             if (!code.isEmpty() && code != "200") {
                 continue;
             }

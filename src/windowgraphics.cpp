@@ -25,7 +25,7 @@ WindowGraphics::WindowGraphics(QWidget *parent)
     , m_chartView(nullptr)
     , m_graphLayout(nullptr)
     , m_tabWidget(nullptr)
-    , m_graphsVisible(false)
+    , m_graphsVisible(true)
 {
     setupUI();
     setAcceptDrops(true);
@@ -180,7 +180,7 @@ void WindowGraphics::setupUI()
     );
     
     progressLayout->addWidget(progressBar);
-    mainLayout->addWidget(progressGroup);
+    // mainLayout->addWidget(progressGroup);
 
     playButton = new QPushButton("Play");
     playButton->setStyleSheet(
@@ -216,17 +216,14 @@ void WindowGraphics::setupUI()
 
 void WindowGraphics::setupGraphTabs()
 {
-    // 1. Общий RPS (одна линия)
-    addGraphTab("RPS (Total)", 
-        "sum(rate(jmeter_requests_total[30s]))");
-    
-    // 2. RPS по каждому запросу (много линий)
-    addGraphTab("RPS by Endpoint", 
-        "sum(rate(jmeter_requests_total[30s])) by (label)");
-    
-    // 3. Среднее время ответа по каждому запросу
-    addGraphTab("Avg Response Time", 
+    addGraphTab("Avg Response Time by label", 
         "avg(jmeter_rt_summary) by (label)");
+
+    addGraphTab("Latency", 
+        "jmeter_latency != 0");
+    
+    addGraphTab("Number of errors per minute", 
+        "sum(rate(jmeter_failure_total[1m])) by (label) > 0");
 }
 
 void WindowGraphics::addGraphTab(const QString& title, const QString& prometheusQuery)

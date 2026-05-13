@@ -16,6 +16,7 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QApplication>
+#include <QTextCodec>
 #include "windows.h"
 // Конструктор
 WSLChecker::WSLChecker(QObject *parent) : QObject(parent)
@@ -345,7 +346,6 @@ void WSLChecker::onAnsibleInstallFinished(int exitCode, QProcess::ExitStatus exi
 // Проверка наличия WSL и дистрибутивов
 WSLChecker::WSLInfo WSLChecker::checkWSL()
 {
-    
     WSLInfo info;
     
     // Проверяем наличие wsl.exe в системном пути
@@ -357,79 +357,36 @@ WSLChecker::WSLInfo WSLChecker::checkWSL()
         if (!whichOutput.isEmpty()) {
             info.isInstalled = true;
             
-            // Пытаемся получить список установленных дистрибутивов
-            QProcess listProcess;
-            listProcess.start("wsl", QStringList() << "--list" << "--verbose");
+            // Пытаемся получить список установленных дистрибутивов через cmd
+            QProcess cmdProcess;
+            cmdProcess.start("cmd.exe", QStringList() << "/c" << "wsl --list --quiet");
             
-            if (listProcess.waitForFinished(3000)) {
-                QString output = QString::fromLocal8Bit(listProcess.readAllStandardOutput());
-                // Разбираем вывод построчно
-                QStringList lines = output.split('\n', QString::SkipEmptyParts);
+            if (cmdProcess.waitForFinished(3000)) {
+            QByteArray rawOutput = cmdProcess.readAllStandardOutput();
+            
+            // Вывод в UTF-16LE (каждый символ - 2 байта)
+            QString line;
+            
+            // Пробуем декодировать как UTF-16LE
+            if (rawOutput.size() > 1) 
+                line = QString::fromUtf16(reinterpret_cast<const ushort*>(rawOutput.constData()), rawOutput.size() / 2);
+
+                    qDebug() << "Found distro:" << line;
+        }
+            
+            // Если всё равно не нашли дистрибутивы, но WSL установлен - используем Ubuntu по умолчанию
+            if (info.distributions.isEmpty()) {
+                info.distributions.append("Ubuntu");
+                qDebug() << "Using default distro: Ubuntu";
+            }
+            
+            if (!info.distributions.isEmpty()) {
+                info.hasDistributions = true;
+                info.defaultDistribution = info.distributions.first();
                 
-                // Пропускаем заголовок (первую строку)
-                for (int i = 1; i < lines.size(); ++i) {
-                    QString line = lines[i].trimmed();
-                    if (line.isEmpty()) continue;
-                    // Формат вывода: "  * Ubuntu-22.04    Running     2"
-                    // Ищем название дистрибутива (обычно второй столбец)
-                    QStringList parts = line.split(QRegExp("\\s+"), QString::SkipEmptyParts);
-                    
-                    if (parts.size() >= 2) {
-                        QString distroName;
-                        
-                        // Если первый символ '*', то имя во втором столбце
-                        if (parts[0] == "*") {
-                            distroName = parts[1];
-                        } else {
-                            distroName = parts[0];
-                        }
-                        
-                        // Очищаем от лишних символов
-                        distroName = distroName.trimmed();
-                        distroName.remove('\r');
-                        distroName.remove('\n');
-                        
-                        if (!distroName.isEmpty() && !distroName.startsWith("NAME")) {
-                            info.distributions.append(distroName);
-                        }
-                    }
-                }
+                // Только теперь проверяем Ansible, так как есть дистрибутивы
+                QTimer::singleShot(100, this, &WSLChecker::checkAnsibleVersionAsync);
                 
-                // Если не получилось через --verbose, пробуем --quiet
-                if (info.distributions.isEmpty()) {
-                    QProcess quietProcess;
-                    quietProcess.start("wsl", QStringList() << "--list" << "--quiet");
-                    
-                    if (quietProcess.waitForFinished(3000)) {
-                        QString quietOutput = QString::fromLocal8Bit(quietProcess.readAllStandardOutput());
-                        QStringList quietLines = quietOutput.split('\n', QString::SkipEmptyParts);
-                        
-                        for (QString distro : quietLines) {
-                            distro = distro.trimmed();
-                            distro.remove('*');
-                            distro.remove('\r');
-                            distro.remove('\n');
-                            
-                            if (!distro.isEmpty()) {
-                                info.distributions.append(distro);
-                            }
-                        }
-                    }
-                }
-                
-                if (!info.distributions.isEmpty()) {
-                    info.hasDistributions = true;
-                    info.defaultDistribution = info.distributions.first();
-                    
-                    // Только теперь проверяем Ansible, так как есть дистрибутивы
-                    QTimer::singleShot(100, this, &WSLChecker::checkAnsibleVersionAsync);
-                    
-                } else {
-                    info.hasDistributions = false;
-                    info.defaultDistribution = "Ubuntu";
-                    info.ansibleInstalled = false;
-                    info.ansibleVersion = QString();
-                }
             } else {
                 info.hasDistributions = false;
                 info.defaultDistribution = "Ubuntu";
@@ -458,11 +415,8 @@ WSLChecker::WSLInfo WSLChecker::checkWSL()
     
     qDebug() << "  isInstalled:" << info.isInstalled;
     qDebug() << "  hasDistributions:" << info.hasDistributions;
-    qDebug() << "  ansibleInstalled:" << info.ansibleInstalled;
-    qDebug() << "  ansibleVersion:" << info.ansibleVersion;
-    qDebug() << "  defaultDistribution:" << info.defaultDistribution;
     qDebug() << "  distributions:" << info.distributions;
-    qDebug() << "  errorMessage:" << info.errorMessage;
+    qDebug() << "  defaultDistribution:" << info.defaultDistribution;
     
     return info;
 }

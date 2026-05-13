@@ -16,7 +16,7 @@ AnsibleRunner::AnsibleRunner(QObject *parent)
     , jmeterRemoteTestDir("/opt/jmeter_tests")
     , jmeterResultsRemoteDir("/tmp/jmeter_results")
     , jmeterResultsLocalDir("./jmeter_results")
-    , jmeterTestDuration(300)  // <-- ДОБАВЬТЕ ЭТУ СТРОКУ
+    , jmeterTestDuration(60)  // <-- ДОБАВЬТЕ ЭТУ СТРОКУ
 {
     ansibleProcess = new QProcess(this);
 
@@ -153,7 +153,6 @@ void AnsibleRunner::executePlaybook()
     arguments << "-i" << convertToWslPath(inventoryPath);
     arguments << convertToWslPath(playbookPath);
     
-    // ========== ДОБАВЬТЕ ЭТОТ БЛОК ==========
     // Передаем JMeter переменные через extra-vars
     QMap<QString, QString> extraVars;
     
