@@ -276,170 +276,141 @@
     #     - inventory_hostname != jmeter_host
     #     - ansible_password is defined
 
-    - name: Start RPLM.IP.Server process
+    # - name: Start RPLM.IP.Server process
+    #   raw: |
+    #     cd /opt/RPLM/
+    #     if [ -f ./RPLM.IP.Server ]; then
+    #       chmod +x ./RPLM.IP.Server
+    #       echo "Starting RPLM.IP.Server..."
+    #       nohup ./RPLM.IP.Server > /var/log/rplm_ip_server.log 2>&1 &
+    #       sleep 2
+    #       if pgrep -f RPLM.IP.Server > /dev/null; then
+    #         echo "✅ RPLM.IP.Server started successfully (PID: $(pgrep -f RPLM.IP.Server))"
+    #       else
+    #         echo "❌ Failed to start RPLM.IP.Server"
+    #         exit 1
+    #       fi
+    #     else
+    #       echo "❌ RPLM.IP.Server not found in /opt/RPLM/"
+    #       ls -la /opt/RPLM/
+    #       exit 1
+    #     fi
+    #   register: rplm_start
+    #   become: yes
+    #   changed_when: false
+    #   when: inventory_hostname != jmeter_host
+
+ # СОЗДАНИЕ SYSTEMD СЕРВИСА ДЛЯ RPLM
+    - name: Create RPLM systemd service
       raw: |
-        cd /opt/RPLM/
-        if [ -f ./RPLM.IP.Server ]; then
-          chmod +x ./RPLM.IP.Server
-          echo "Starting RPLM.IP.Server..."
-          nohup ./RPLM.IP.Server > /var/log/rplm_ip_server.log 2>&1 &
-          sleep 2
-          if pgrep -f RPLM.IP.Server > /dev/null; then
-            echo "✅ RPLM.IP.Server started successfully (PID: $(pgrep -f RPLM.IP.Server))"
-          else
-            echo "❌ Failed to start RPLM.IP.Server"
-            exit 1
-          fi
-        else
-          echo "❌ RPLM.IP.Server not found in /opt/RPLM/"
-          ls -la /opt/RPLM/
-          exit 1
-        fi
-      register: rplm_start
-      become: yes
-      changed_when: false
-      when: inventory_hostname != jmeter_host
-
-# КОПИРОВАНИЕ JMETER АРХИВА (С ЛОКАЛЬНОЙ МАШИНЫ)
-    - name: Copy JMeter archive to JMeter host
-      shell: |
-        JMETER_HOST="{{ jmeter_host }}"
-        JMETER_USER="{{ hostvars[jmeter_host]['ansible_user'] }}"
-        JMETER_PASSWORD="{{ hostvars[jmeter_host]['ansible_password'] }}"
-        
-        echo "Copying JMeter archive to $JMETER_HOST..."
-        
-        sshpass -p "$JMETER_PASSWORD" scp -o StrictHostKeyChecking=no \
-          "{{ jmeter_archive_src }}" \
-          $JMETER_USER@$JMETER_HOST:"/tmp/{{ jmeter_archive_src | basename }}"
-        
-        if [ $? -eq 0 ]; then
-          echo "✅ JMeter archive copied"
-        else
-          exit 1
-        fi
-      delegate_to: localhost
-      run_once: true
-      when: jmeter_host is defined and jmeter_host != ""
-
-    # РАСПАКОВКА JMETER АРХИВА
-    - name: Extract JMeter archive
-      raw: |
-        ARCHIVE_FILE="/tmp/{{ jmeter_archive_src | basename }}"
-        EXTRACT_DIR="{{ jmeter_remote_test_dir | default('/opt/jmeter_tests') }}"
-        
-        mkdir -p "$EXTRACT_DIR"
-        
-        # Устанавливаем unzip если нужно
-        if ! command -v unzip >/dev/null 2>&1; then
-          sudo apt-get update && sudo apt-get install -y unzip
-        fi
-        
-        # Распаковываем ZIP архив
-        unzip -o "$ARCHIVE_FILE" -d "$EXTRACT_DIR"
-        
-        if [ $? -eq 0 ]; then
-          echo "✅ Extraction successful"
-          ls -la "$EXTRACT_DIR"
-        else
-          exit 1
-        fi
-      delegate_to: "{{ jmeter_host }}"
-      run_once: true
-      become: yes
-      when: jmeter_host is defined
-
-  # # УСТАНОВКА СВЕЖЕЙ ВЕРСИИ JMETER
-  #   - name: Install latest JMeter on JMeter host
-  #     raw: |
-  #       echo "=== Installing JMeter 5.6.3 on {{ jmeter_host }} ==="
-        
-  #       # Удаляем старую версию
-  #       sudo apt-get remove -y jmeter || true
-        
-  #       # Устанавливаем Java
-  #       if ! command -v java >/dev/null 2>&1; then
-  #         sudo apt-get update
-  #         sudo apt-get install -y openjdk-11-jre-headless
-  #       fi
-        
-  #       # Скачиваем JMeter
-  #       cd /tmp
-  #       if [ ! -f apache-jmeter-5.6.3.tgz ]; then
-  #         wget -q --show-progress https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz
-  #       fi
-        
-  #       tar -xzf apache-jmeter-5.6.3.tgz
-  #       sudo mv apache-jmeter-5.6.3 /opt/jmeter
-  #       sudo ln -sf /opt/jmeter/bin/jmeter /usr/local/bin/jmeter
-        
-  #       echo "✅ JMeter 5.6.3 installed successfully"
-  #       /usr/local/bin/jmeter --version 2>&1 | head -3
-  #     delegate_to: "{{ jmeter_host }}"
-  #     run_once: true
-  #     become: yes
-  #     when: jmeter_host is defined
-
-# УСТАНОВКА NODE_EXPORTER НА ВСЕ ХОСТЫ
-    - name: Install node_exporter on all hosts
-      raw: |
-        echo "=== Installing node_exporter on {{ inventory_hostname }} ==="
-        
-        # Скачиваем node_exporter
-        cd /tmp
-        wget -q https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz
-        tar -xzf node_exporter-1.7.0.linux-amd64.tar.gz
-        
-        # Устанавливаем
-        sudo mv node_exporter-1.7.0.linux-amd64/node_exporter /usr/local/bin/
-        sudo chmod +x /usr/local/bin/node_exporter
-        
-        # Создаем пользователя для node_exporter
-        sudo useradd -rs /bin/false node_exporter || true
-        
-        # Создаем systemd сервис
-        sudo tee /etc/systemd/system/node_exporter.service > /dev/null << EOF
+        sudo tee /etc/systemd/system/rplm-ip.service << 'EOF'
         [Unit]
-        Description=Node Exporter
+        Description=RPLM IP Server
         After=network.target
         
         [Service]
-        User=node_exporter
-        Group=node_exporter
         Type=simple
-        ExecStart=/usr/local/bin/node_exporter
+        User=root
+        WorkingDirectory=/opt/RPLM
+        ExecStart=/opt/RPLM/RPLM.IP.Server
+        Restart=always
+        RestartSec=5
+        StandardOutput=append:/var/log/rplm_ip_server.log
+        StandardError=append:/var/log/rplm_ip_server.log
         
         [Install]
         WantedBy=multi-user.target
         EOF
         
-        # Запускаем сервис
         sudo systemctl daemon-reload
-        sudo systemctl enable node_exporter
-        sudo systemctl start node_exporter
+        sudo systemctl enable rplm-ip
+        sudo systemctl start rplm-ip
         
-        sleep 2
-        if systemctl is-active --quiet node_exporter; then
-          echo "✅ node_exporter started on {{ inventory_hostname }}, listening on port 9100"
-        else
-          echo "❌ Failed to start node_exporter on {{ inventory_hostname }}"
-          exit 1
-        fi
+        sleep 3
+        sudo systemctl status rplm-ip --no-pager
       become: yes
-      register: node_exporter_install
+      when: inventory_hostname != jmeter_host
 
-    - name: Check node_exporter is running
+# # КОПИРОВАНИЕ JMETER АРХИВА (С ЛОКАЛЬНОЙ МАШИНЫ)
+#     - name: Copy JMeter archive to JMeter host
+#       shell: |
+#         JMETER_HOST="{{ jmeter_host }}"
+#         JMETER_USER="{{ hostvars[jmeter_host]['ansible_user'] }}"
+#         JMETER_PASSWORD="{{ hostvars[jmeter_host]['ansible_password'] }}"
+        
+#         echo "Copying JMeter archive to $JMETER_HOST..."
+        
+#         sshpass -p "$JMETER_PASSWORD" scp -o StrictHostKeyChecking=no \
+#           "{{ jmeter_archive_src }}" \
+#           $JMETER_USER@$JMETER_HOST:"/tmp/{{ jmeter_archive_src | basename }}"
+        
+#         if [ $? -eq 0 ]; then
+#           echo "✅ JMeter archive copied"
+#         else
+#           exit 1
+#         fi
+#       delegate_to: localhost
+#       run_once: true
+#       when: jmeter_host is defined and jmeter_host != ""
+
+#     # РАСПАКОВКА JMETER АРХИВА
+#     - name: Extract JMeter archive
+#       raw: |
+#         ARCHIVE_FILE="/tmp/{{ jmeter_archive_src | basename }}"
+#         EXTRACT_DIR="{{ jmeter_remote_test_dir | default('/opt/jmeter_tests') }}"
+        
+#         mkdir -p "$EXTRACT_DIR"
+        
+#         # Устанавливаем unzip если нужно
+#         if ! command -v unzip >/dev/null 2>&1; then
+#           sudo apt-get update && sudo apt-get install -y unzip
+#         fi
+        
+#         # Распаковываем ZIP архив
+#         unzip -o "$ARCHIVE_FILE" -d "$EXTRACT_DIR"
+        
+#         if [ $? -eq 0 ]; then
+#           echo "✅ Extraction successful"
+#           ls -la "$EXTRACT_DIR"
+#         else
+#           exit 1
+#         fi
+#       delegate_to: "{{ jmeter_host }}"
+#       run_once: true
+#       become: yes
+#       when: jmeter_host is defined
+
+  # УСТАНОВКА СВЕЖЕЙ ВЕРСИИ JMETER
+    - name: Install latest JMeter on JMeter host
       raw: |
-        curl -s http://localhost:9100/metrics | head -5
-      register: node_check
-      when: inventory_hostname != jmeter_host
+        echo "=== Installing JMeter 5.6.3 on {{ jmeter_host }} ==="
+        
+        # Удаляем старую версию
+        sudo apt-get remove -y jmeter || true
+        
+        # Устанавливаем Java
+        if ! command -v java >/dev/null 2>&1; then
+          sudo apt-get update
+          sudo apt-get install -y openjdk-11-jre-headless
+        fi
+        
+        # Скачиваем JMeter
+        cd /tmp
+        if [ ! -f apache-jmeter-5.6.3.tgz ]; then
+          wget -q --show-progress https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz
+        fi
+        
+        tar -xzf apache-jmeter-5.6.3.tgz
+        sudo mv apache-jmeter-5.6.3 /opt/jmeter
+        sudo ln -sf /opt/jmeter/bin/jmeter /usr/local/bin/jmeter
+        
+        echo "✅ JMeter 5.6.3 installed successfully"
+        /usr/local/bin/jmeter --version 2>&1 | head -3
+      delegate_to: "{{ jmeter_host }}"
+      run_once: true
+      become: yes
+      when: jmeter_host is defined
 
-    - name: Show node_exporter status
-      debug:
-        var: node_check.stdout_lines
-      when: inventory_hostname != jmeter_host
-
-    # ЗАПУСК JMETER ТЕСТА С ПЕРЕДАЧЕЙ TARGET_HOST
     - name: Run JMeter test with target host label
       raw: |
         EXTRACT_DIR="{{ jmeter_remote_test_dir | default('/opt/jmeter_tests') }}"
@@ -449,7 +420,12 @@
         
         mkdir -p "$RESULTS_DIR"
         
-        # Получаем список хостов для теста
+        # Проверяем существование JMX файла
+        if [ ! -f "$JMX_FILE" ]; then
+          echo "❌ JMX file not found: $JMX_FILE"
+          exit 1
+        fi
+        
         TARGET_HOSTS=""
         for host in {{ groups['webservers'] | join(' ') }}; do
           if [ "$host" != "{{ jmeter_host }}" ]; then
@@ -457,7 +433,6 @@
           fi
         done
         
-        # Запускаем тест для каждого хоста отдельно
         for TARGET in $TARGET_HOSTS; do
           echo "=== Testing host: $TARGET ==="
           echo "Start time: $(date)"
@@ -465,8 +440,8 @@
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
           RESULT_FILE="$RESULTS_DIR/result_${TARGET}_${TIMESTAMP}.jtl"
           
-          # Запускаем тест
-          timeout $TEST_DURATION /usr/local/bin/jmeter -n \
+          # Запускаем тест (без sudo, так как become: yes уже делает от root)
+          /usr/local/bin/jmeter -n \
             -t "$JMX_FILE" \
             -l "$RESULT_FILE" \
             -Jtarget_host=$TARGET \
@@ -476,22 +451,24 @@
             -JDuration=$TEST_DURATION \
             -Jsample_variables=target_host
           
-          if [ $? -eq 0 ] || [ $? -eq 124 ]; then
+          EXIT_CODE=$?
+          
+          if [ $EXIT_CODE -eq 0 ] || [ $EXIT_CODE -eq 124 ]; then
             echo "✅ Test completed for $TARGET"
-            echo "Results: $RESULT_FILE"
-            
+            echo "Results saved to: $RESULT_FILE"
             # Проверяем, что target_host записался
-            echo "First 5 lines of result:"
-            head -5 "$RESULT_FILE"
+            echo "Last line target_host: $(tail -1 $RESULT_FILE | awk -F',' '{print $NF}')"
           else
-            echo "❌ Test failed for $TARGET"
+            echo "❌ Test failed for $TARGET with exit code: $EXIT_CODE"
+            exit $EXIT_CODE
           fi
           
           echo "Finished at: $(date)"
           echo "---"
         done
       delegate_to: "{{ jmeter_host }}"
-      register: jmeter_run
       run_once: true
       become: yes
+      become_method: sudo
+      become_flags: '-S'
       when: jmeter_host is defined

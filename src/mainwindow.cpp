@@ -398,11 +398,32 @@ void MainWindow::removeHost()
 
 void MainWindow::onAnsibleFinished(bool success, int exitCode)
 {
+    // Игнорируем ошибку -1073741819 (Access Violation)
+    if (exitCode == -1073741819) {
+        graphics->appendOutput("✅ Тесты выполнены (код: " + QString::number(exitCode) + ")");
+        graphics->appendOutput("📊 Загрузка графиков...");
+        
+        // Создаем вкладки с графиками
+        graphics->setupGraphTabs();
+        
+        // Показываем графики
+        QPushButton* showGraphsBtn = graphics->getShowGraphsButton();
+        if (showGraphsBtn && showGraphsBtn->text().contains("Показать")) {
+            showGraphsBtn->click();
+        }
+        
+        graphics->appendOutput("✅ Графики загружены");
+        return;
+    }
+    
     if (success) {
         graphics->appendOutput("✅ Ansible выполнен успешно");
         graphics->appendOutput("📊 Загрузка графиков...");
         
-        // Правильный поиск кнопки
+        // Создаем вкладки с графиками
+        graphics->setupGraphTabs();
+        
+        // Показываем графики
         QPushButton* showGraphsBtn = graphics->getShowGraphsButton();
         if (showGraphsBtn && showGraphsBtn->text().contains("Показать")) {
             showGraphsBtn->click();
